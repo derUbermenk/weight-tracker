@@ -21,6 +21,7 @@ type Storage interface {
 	CreateUser(request api.NewUserRequest) error
 	CreateWeightEntry(request api.Weight) error
 	GetUser(userID int) (api.User, error)
+	GetUsers() ([]api.User, error)
 }
 
 type storage struct {
@@ -92,6 +93,34 @@ func (s *storage) CreateWeightEntry(request api.Weight) error {
 	}
 
 	return nil
+}
+
+func (s *storage) GetUsers() (users []api.User, err error) {
+	getAllUsersStatement := `
+		SELECT id, name, age, height, sex, activity_level, email, weight_goal FROM "user";
+	`
+	// query users here
+	rows, err := s.db.Query(getAllUsersStatement)
+
+	if err != nil {
+		return
+	}
+
+	// scan each user and add to users
+	for rows.Next() {
+		user := api.User{}
+		if err = rows.Scan(
+			&user.ID, &user.Name, &user.Age,
+			&user.Height, &user.Sex, &user.ActivityLevel,
+			&user.Email, &user.WeightGoal,
+		); err != nil {
+			return
+		}
+		users = append(users, user)
+	}
+
+	rows.Close()
+	return
 }
 
 func (s *storage) GetUser(userID int) (api.User, error) {

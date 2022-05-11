@@ -21,6 +21,20 @@ func (s *Server) ApiStatus() gin.HandlerFunc {
 	}
 }
 
+func (s *Server) GetUsers() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		users, err := s.userService.All()
+
+		if err != nil {
+			log.Printf("service error: %v", err)
+			c.JSON(http.StatusInternalServerError, nil)
+			return
+		}
+
+		c.JSON(http.StatusOK, users)
+	}
+}
+
 func (s *Server) CreateUser() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")

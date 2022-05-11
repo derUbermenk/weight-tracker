@@ -12,6 +12,7 @@ func (s *Server) Routes() *gin.Engine {
 		// prefix the user routes
 		user := v1.Group("/user")
 		{
+			user.GET("", s.GetUsers())
 			user.POST("", s.CreateUser())
 		}
 
