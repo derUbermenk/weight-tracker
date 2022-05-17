@@ -5,14 +5,14 @@ import {
 } from "react-router-dom";
 
 import Users from "./Users";
-import Hello from "./Hello";
+import User from "./User";
 
 function RouteSwitch(){
   return (
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<Users />} />
-        <Route path="/hello" element={<Hello />} />
+        <Route path="/user/:userId" element={<User />} />
       </Routes>
     </BrowserRouter>
   )

@@ -19,6 +19,7 @@ function Table(props) {
                 return <td>{entry[data_header]}</td>
               }
               )}
+              <td><a href={`/user/${entry.id}`}>{entry.name}</a></td>
             </tr>
           )
         })
@@ -58,7 +59,6 @@ class Users extends Component {
     return (
       <div>
         <div>
-          <a href="/hello">Hello</a>
         </div>
 
         <h1>Users</h1>

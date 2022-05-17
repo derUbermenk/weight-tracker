@@ -3,6 +3,7 @@ package app
 import (
 	"log"
 	"net/http"
+	"strconv"
 	"weight-tracker/pkg/api"
 
 	"github.com/gin-gonic/gin"
@@ -18,6 +19,28 @@ func (s *Server) ApiStatus() gin.HandlerFunc {
 		}
 
 		c.JSON(http.StatusOK, response)
+	}
+}
+
+func (s *Server) GetUser() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		userID, err := strconv.Atoi(c.Param("userId"))
+
+		if err != nil {
+			log.Printf("handler error: %v", err)
+			c.JSON(http.StatusBadRequest, nil)
+			return
+		}
+
+		user, err := s.userService.GetUser(userID)
+
+		if err != nil {
+			log.Printf("handler error: %v", err)
+			c.JSON(http.StatusBadRequest, nil)
+			return
+		}
+
+		c.JSON(http.StatusOK, user)
 	}
 }
 
