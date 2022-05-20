@@ -26,7 +26,7 @@ function NumberAttributes(props) {
 
   const handleChange = (e) => {
     const attribute = e.target.getAttribute("id")
-    const value = e.target.value
+    const value = parseInt(e.target.value, 10)
     onChange(attribute, value)
   }
 
