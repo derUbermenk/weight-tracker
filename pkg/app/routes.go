@@ -15,6 +15,7 @@ func (s *Server) Routes() *gin.Engine {
 			user.GET("/:userId", s.GetUser())
 			user.GET("", s.GetUsers())
 			user.POST("", s.CreateUser())
+			user.PUT("/:userId", s.UpdateUser())
 		}
 
 		// prefix the weight routes
