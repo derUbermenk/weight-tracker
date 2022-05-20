@@ -1,99 +1,31 @@
 import React, {Component, useEffect, useState} from "react";
 import {useParams} from "react-router-dom";
+import {RadioAttributes, TextAttributes, NumberAttributes, Button} from './UserComponents'
 
-function sentenceCase(string) {
-  return string[0].toUpperCase() + string.slice(1)
-}
-
-function TextAttributes(props) {
-  const { object, attribute, notEditable, onChange} = props
-
-  const handleChange = (e) => {
-    const attribute = e.target.getAttribute("id")
-    const value = e.target.value
-    onChange(attribute, value)
+async function getUser(userId, userSetter) {
+  const requestUrl = `http://localhost:8080/v1/api/user/${userId}`
+  const requestOptions = {
+    mode: 'cors'
   }
 
-  return(
-    <div>
-      <label htmlFor={attribute}>{sentenceCase(attribute)}: </label>
-      <input type="text" id={attribute} value={object[attribute]} 
-             disabled={notEditable} onChange={handleChange}
-      />
-    </div>
-  )
-}
+  const request = new Request(requestUrl, requestOptions)
 
-function NumberAttributes(props) {
-  const { object, attribute, notEditable, onChange } = props
+  const response = await fetch(request);
+  const user = await response.json();
 
-  const handleChange = (e) => {
-    const attribute = e.target.getAttribute("id")
-    const value = e.target.value
-    onChange(attribute, value)
-  }
-
-  return(
-    <div>
-      <label htmlFor={attribute}>{sentenceCase(attribute)}</label>
-      <input type="number" id={attribute} value={object[attribute]}
-             disabled={notEditable} onChange={handleChange}
-      />
-    </div>
-  )
-}
-
-function RadioAttributes(props) {
-  const { object, attribute, notEditable, choices, onClick} = props
-
-  const handleClick = (e) => {
-    const value = e.target.value
-    const attribute = e.target.getAttribute("name")
-
-    onClick(attribute, value)
-  }
-
-  return(
-    <div>
-      <label htmlFor={attribute}>{sentenceCase(attribute)}: </label>
-      {
-        choices.map((choice) => {
-          return (
-            <span key={choice}>
-              <input type="radio" id={`${attribute}_${choice}`}  value={choice}
-                      name={attribute} disabled={notEditable}
-                      checked={choice==object[attribute] ? true : false }
-                      onClick={handleClick}
-                      />
-              <label htmlFor={choice}>{sentenceCase(choice)}</label>
-            </span>
-          )
-        })
-      }
-    </div>
-  )
-}
-
-function Button(props) {
-  const { onclick, name } = props
-
-  return(
-    <button onClick={onclick}>
-      {name}
-    </button>
-  )
+  userSetter(user)
 }
 
 function User() {
-  var {userId} = useParams(); 
+  const {userId} = useParams(); 
   const [user, setUser] = useState({});
 
-  useEffect(() => { 
-    fetch(`http://localhost:8080/v1/api/user/${userId}`, {mode: "cors"})
-    .then(response => response.json())
-      .then(user => setUser(user))
-    
-  }, []);
+  useEffect(() => {
+    getUser(userId, (user)=>setUser(user)) },
+    []
+  );
+  
+  const [isNotEdit, setisNotEdit] = useState(true);
 
   const handleUserChange = (attribute, value) => {
     var updated_user = user
@@ -101,15 +33,13 @@ function User() {
     setUser({...updated_user})
   }
 
-  const [isNotEdit, setisNotEdit] = useState(true);
-
   const handleEdit = () => {
     setisNotEdit(false) // make user editable
   }
 
   const handleSave = () => {
     alert(`Save Button clicked, saving ${JSON.stringify(user)}`)
-    // saveUser
+    // saveUser()
     setisNotEdit(true) // make user non editable
   }
 
