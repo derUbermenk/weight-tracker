@@ -16,6 +16,21 @@ async function getUser(userId, userSetter) {
   userSetter(user)
 }
 
+async function updateUser(userId, user, userGetter) {
+  const requestUrl = `http://localhost:8080/v1/api/user/${userId}`
+  const requestOptions = {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(user)
+  }
+  const request = new Request(requestUrl, requestOptions) 
+
+  const response = await fetch(request);
+  response = await response.json();
+
+  userGetter()
+}
+
 function User() {
   const {userId} = useParams(); 
   const [user, setUser] = useState({});
@@ -38,8 +53,7 @@ function User() {
   }
 
   const handleSave = () => {
-    alert(`Save Button clicked, saving ${JSON.stringify(user)}`)
-    // saveUser()
+    updateUser(userId, user, () => getUser(userId, (user) => setUser(user)))
     setisNotEdit(true) // make user non editable
   }
 
