@@ -74,6 +74,16 @@ function RadioAttributes(props) {
   )
 }
 
+function Button(props) {
+  const { onclick, name } = props
+
+  return(
+    <button onClick={onclick}>
+      {name}
+    </button>
+  )
+}
+
 function User() {
   var {userId} = useParams(); 
   const [user, setUser] = useState({});
@@ -93,6 +103,16 @@ function User() {
 
   const [isNotEdit, setisNotEdit] = useState(true);
 
+  const handleEdit = () => {
+    setisNotEdit(false) // make user editable
+  }
+
+  const handleSave = () => {
+    alert(`Save Button clicked, saving ${JSON.stringify(user)}`)
+    // saveUser
+    setisNotEdit(true) // make user non editable
+  }
+
   return (
     <div>
       <h1>Hello {`${user.name}`}!</h1>
@@ -101,9 +121,9 @@ function User() {
         {JSON.stringify(user)}
       </div>
       <br></br>
-      <button onClick={() => setisNotEdit(isNotEdit ? false : true) }>
-        {isNotEdit ? "Edit" : "Save" }
-      </button>
+      { isNotEdit ? 
+        <Button name={'Edit'} onclick={handleEdit}/> :
+        <Button name={'Save'} onclick={handleSave}/> } 
 
       <form>
         <TextAttributes object={user} attribute="name" notEditable={isNotEdit} onChange={handleUserChange}/>
