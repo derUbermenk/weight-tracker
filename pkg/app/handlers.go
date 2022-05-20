@@ -91,6 +91,8 @@ func (s *Server) CreateUser() gin.HandlerFunc {
 
 func (s *Server) UpdateUser() gin.HandlerFunc {
 	return func(c *gin.Context) {
+		c.Header("Content-Type", "application/json")
+
 		var updateUser api.UpdateUserRequest
 
 		err := c.ShouldBindJSON(&updateUser)
