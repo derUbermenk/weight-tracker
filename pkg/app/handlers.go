@@ -89,6 +89,35 @@ func (s *Server) CreateUser() gin.HandlerFunc {
 	}
 }
 
+func (s *Server) UpdateUser() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var updateUser api.UpdateUserRequest
+
+		err := c.ShouldBindJSON(&updateUser)
+
+		if err != nil {
+			log.Printf("handler error: %v", err)
+			c.JSON(http.StatusBadRequest, nil)
+			return
+		}
+
+		err = s.userService.Update(updateUser)
+
+		if err != nil {
+			log.Printf("service error: %v", err)
+			c.JSON(http.StatusInternalServerError, nil)
+			return
+		}
+
+		response := map[string]string{
+			"status": "success",
+			"data":   "user updated",
+		}
+
+		c.JSON(http.StatusOK, response)
+	}
+}
+
 func (s *Server) CreateWeightEntry() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")
