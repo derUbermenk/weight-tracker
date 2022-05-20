@@ -8,6 +8,7 @@ import (
 // UserService contains the methods of the user service
 type UserService interface {
 	New(user NewUserRequest) error
+	Update(user UpdateUserRequest) error
 	GetUser(id int) (user User, err error)
 	All() (users []User, err error)
 }
@@ -27,6 +28,19 @@ func NewUserService(userRepo UserRepository) UserService {
 	return &userService{
 		storage: userRepo,
 	}
+}
+
+func (u *userService) Update(user UpdateUserRequest) error {
+	user.Name = strings.ToLower(user.Name)
+	user.Email = strings.TrimSpace(user.Email)
+
+	err := u.storage.UpdateUser(user)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (u *userService) GetUser(userID int) (User, error) {
