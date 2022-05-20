@@ -80,7 +80,7 @@ func (s *storage) CreateUser(request api.NewUserRequest) error {
 
 func (s *storage) UpdateUser(request api.UpdateUserRequest) error {
 	updateUserStatement := `
-		UPDATE user 
+		UPDATE "user" 
 		SET name = $2, age = $3, height = $4,
 		sex = $5, activity_level = $6, email = $7, 
 		weight_goal = $8 WHERE id = $1;`
