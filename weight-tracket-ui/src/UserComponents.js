@@ -1,5 +1,12 @@
-function sentenceCase(string) {
-  return string[0].toUpperCase() + string.slice(1)
+/**
+ * Makes a string title case
+ * @param {String} string 
+ * @param {String} separator 
+ */
+function titleCase(string, separator) {
+  var words = string.split("_")
+  words = words.map((word) => word[0].toUpperCase() + word.slice(1) )
+  return words.join(" ")
 }
 
 function TextAttributes(props) {
@@ -13,7 +20,7 @@ function TextAttributes(props) {
 
   return(
     <div>
-      <label htmlFor={attribute}>{sentenceCase(attribute)}: </label>
+      <label htmlFor={attribute}>{titleCase(attribute, "_")}: </label>
       <input type="text" id={attribute} value={object[attribute]} 
              disabled={notEditable} onChange={handleChange}
       />
@@ -32,7 +39,7 @@ function NumberAttributes(props) {
 
   return(
     <div>
-      <label htmlFor={attribute}>{sentenceCase(attribute)}</label>
+      <label htmlFor={attribute}>{titleCase(attribute, "_")}: </label>
       <input type="number" id={attribute} value={object[attribute]}
              disabled={notEditable} onChange={handleChange}
       />
@@ -52,7 +59,7 @@ function RadioAttributes(props) {
 
   return(
     <div>
-      <label htmlFor={attribute}>{sentenceCase(attribute)}: </label>
+      <label htmlFor={attribute}>{titleCase(attribute, "_")}: </label>
       {
         choices.map((choice) => {
           return (
@@ -62,7 +69,7 @@ function RadioAttributes(props) {
                       checked={choice==object[attribute] ? true : false }
                       onClick={handleClick}
                       />
-              <label htmlFor={choice}>{sentenceCase(choice)}</label>
+              <label htmlFor={choice}>{titleCase(choice, "_")}</label>
             </span>
           )
         })
