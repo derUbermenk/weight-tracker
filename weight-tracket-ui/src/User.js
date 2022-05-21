@@ -16,6 +16,13 @@ async function getUser(userId, userSetter) {
   userSetter(user)
 }
 
+/** 
+ * update the user in server with current user credentials
+ * @param {int} userId the user's id
+ * @param {Object} user user object
+ * @param {Function} userGetter fetches updated user
+ }}
+*/
 async function updateUser(userId, user, userGetter) {
   const requestUrl = `http://localhost:8080/v1/api/user/${userId}`
   const requestOptions = {
