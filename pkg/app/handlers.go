@@ -85,7 +85,7 @@ func (s *Server) CreateUser() gin.HandlerFunc {
 			"data":   "new user created",
 		}
 
-		c.JSON(http.StatusOK, response)
+		c.JSON(http.StatusCreated, response)
 	}
 }
 
