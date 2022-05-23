@@ -37,8 +37,7 @@ function NewUser() {
       <div>
         {JSON.stringify(user)}
       </div>
-      <Button onclick={handleSave} name="Save User" />
-      <form >
+      <form onSubmit={handleSave}>
         <TextAttributes object={user} attribute="name" notEditable={false} onChange={handleUserChange}/>
         <TextAttributes object={user} attribute="email" notEditable={false} onChange={handleUserChange}/>
         <NumberAttributes object={user} attribute="age" notEditable={false} onChange={handleUserChange}/>
@@ -54,7 +53,16 @@ function NewUser() {
 
         <NumberAttributes object={user} attribute="height" notEditable={false} onChange={handleUserChange}/>
         <NumberAttributes object={user} attribute="activity_level" notEditable={false} onChange={handleUserChange}/>
-        <TextAttributes object={user} attribute="weight_goal" notEditable={false} onChange={handleUserChange}/>
+        <RadioAttributes 
+          object={user}
+          attribute="weight_goal" 
+          notEditable={false} 
+          choices={["loose", "maintain", "gain"]}
+          onClick={handleUserChange} />
+
+        <br></br>
+        <input type="submit" value="Create User"></input>
+
       </form>
     </div>
   )
