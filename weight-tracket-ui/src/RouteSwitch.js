@@ -6,6 +6,7 @@ import {
 
 import Users from "./Users";
 import User from "./User";
+import NewUser from "./NewUser";
 
 function RouteSwitch(){
   return (
@@ -13,6 +14,7 @@ function RouteSwitch(){
       <Routes>
         <Route path="/" element={<Users />} />
         <Route path="/user/:userId" element={<User />} />
+        <Route path="/user/new" element={<NewUser />} />
       </Routes>
     </BrowserRouter>
   )

@@ -63,6 +63,9 @@ class Users extends Component {
 
         <h1>Users</h1>
         <Table data_values={users} data_headers={keys} />
+
+        <br></br>
+        <a href="/user/new">Add User</a>
       </div>
     )
   };

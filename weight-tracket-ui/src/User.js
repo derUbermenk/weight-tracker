@@ -1,4 +1,4 @@
-import React, {Component, useEffect, useState} from "react";
+import React, {useEffect, useState} from "react";
 import {useParams} from "react-router-dom";
 import {RadioAttributes, TextAttributes, NumberAttributes, Button} from './UserComponents'
 
@@ -16,6 +16,13 @@ async function getUser(userId, userSetter) {
   userSetter(user)
 }
 
+/** 
+ * update the user in server with current user credentials
+ * @param {int} userId the user's id
+ * @param {Object} user user object
+ * @param {Function} userGetter fetches updated user
+ }}
+*/
 async function updateUser(userId, user, userGetter) {
   const requestUrl = `http://localhost:8080/v1/api/user/${userId}`
   const requestOptions = {
@@ -26,7 +33,7 @@ async function updateUser(userId, user, userGetter) {
   const request = new Request(requestUrl, requestOptions) 
 
   const response = await fetch(request);
-  response = await response.json();
+  const data = await response.json();
 
   userGetter()
 }

@@ -1,9 +1,18 @@
-function sentenceCase(string) {
-  return string[0].toUpperCase() + string.slice(1)
+import './UserComponents.css';
+
+/**
+ * Makes a string title case
+ * @param {String} string 
+ * @param {String} separator 
+ */
+function titleCase(string, separator) {
+  var words = string.split("_")
+  words = words.map((word) => word[0].toUpperCase() + word.slice(1) )
+  return words.join(" ")
 }
 
 function TextAttributes(props) {
-  const { object, attribute, notEditable, onChange} = props
+  const { object, attribute, notEditable, onChange, type} = props
 
   const handleChange = (e) => {
     const attribute = e.target.getAttribute("id")
@@ -13,9 +22,10 @@ function TextAttributes(props) {
 
   return(
     <div>
-      <label htmlFor={attribute}>{sentenceCase(attribute)}: </label>
-      <input type="text" id={attribute} value={object[attribute]} 
+      <label htmlFor={attribute}>{titleCase(attribute, "_")}: </label>
+      <input type={type} id={attribute} value={object[attribute]} 
              disabled={notEditable} onChange={handleChange}
+             required
       />
     </div>
   )
@@ -32,9 +42,10 @@ function NumberAttributes(props) {
 
   return(
     <div>
-      <label htmlFor={attribute}>{sentenceCase(attribute)}</label>
+      <label htmlFor={attribute}>{titleCase(attribute, "_")}: </label>
       <input type="number" id={attribute} value={object[attribute]}
              disabled={notEditable} onChange={handleChange}
+             required
       />
     </div>
   )
@@ -52,7 +63,7 @@ function RadioAttributes(props) {
 
   return(
     <div>
-      <label htmlFor={attribute}>{sentenceCase(attribute)}: </label>
+      <label htmlFor={attribute}>{titleCase(attribute, "_")}: </label>
       {
         choices.map((choice) => {
           return (
@@ -60,9 +71,10 @@ function RadioAttributes(props) {
               <input type="radio" id={`${attribute}_${choice}`}  value={choice}
                       name={attribute} disabled={notEditable}
                       checked={choice==object[attribute] ? true : false }
-                      onClick={handleClick}
+                      onChange={handleClick}
+                      required
                       />
-              <label htmlFor={choice}>{sentenceCase(choice)}</label>
+              <label htmlFor={choice}>{titleCase(choice, "_")}</label>
             </span>
           )
         })
