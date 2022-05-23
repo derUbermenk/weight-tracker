@@ -33,7 +33,7 @@ async function updateUser(userId, user, userGetter) {
   const request = new Request(requestUrl, requestOptions) 
 
   const response = await fetch(request);
-  response = await response.json();
+  const data = await response.json();
 
   userGetter()
 }
