@@ -1,3 +1,5 @@
+import './UserComponents.css';
+
 /**
  * Makes a string title case
  * @param {String} string 
@@ -10,7 +12,7 @@ function titleCase(string, separator) {
 }
 
 function TextAttributes(props) {
-  const { object, attribute, notEditable, onChange} = props
+  const { object, attribute, notEditable, onChange, type} = props
 
   const handleChange = (e) => {
     const attribute = e.target.getAttribute("id")
@@ -21,8 +23,9 @@ function TextAttributes(props) {
   return(
     <div>
       <label htmlFor={attribute}>{titleCase(attribute, "_")}: </label>
-      <input type="text" id={attribute} value={object[attribute]} 
+      <input type={type} id={attribute} value={object[attribute]} 
              disabled={notEditable} onChange={handleChange}
+             required
       />
     </div>
   )
@@ -42,6 +45,7 @@ function NumberAttributes(props) {
       <label htmlFor={attribute}>{titleCase(attribute, "_")}: </label>
       <input type="number" id={attribute} value={object[attribute]}
              disabled={notEditable} onChange={handleChange}
+             required
       />
     </div>
   )
@@ -68,6 +72,7 @@ function RadioAttributes(props) {
                       name={attribute} disabled={notEditable}
                       checked={choice==object[attribute] ? true : false }
                       onChange={handleClick}
+                      required
                       />
               <label htmlFor={choice}>{titleCase(choice, "_")}</label>
             </span>
