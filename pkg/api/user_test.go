@@ -13,7 +13,7 @@ type mockUserRepo struct {
 
 func (m mockUserRepo) CreateUser(request api.NewUserRequest) error {
 	if request.Name == "test user already created" {
-		return errors.New("repository - user already exists in database")
+		return errors.New("user service - user with email already exists")
 	}
 
 	return nil
@@ -70,9 +70,9 @@ func TestCreateNewUser(t *testing.T) {
 			},
 			want: errors.New("user service - name required"),
 		}, {
-			name: "should return error from database because user already exists",
+			name: "should return error because user with email already exists",
 			request: api.NewUserRequest{
-				Name:          "test user already created",
+				Name:          "test user with email exists",
 				Age:           20,
 				Height:        180,
 				WeightGoal:    "maintain",
@@ -80,7 +80,7 @@ func TestCreateNewUser(t *testing.T) {
 				ActivityLevel: 5,
 				Email:         "test_user@gmail.com",
 			},
-			want: errors.New("repository - user already exists in database"),
+			want: errors.New("repository - user with email already exists"),
 		},
 	}
 
