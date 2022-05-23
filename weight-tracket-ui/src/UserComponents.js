@@ -67,7 +67,7 @@ function RadioAttributes(props) {
               <input type="radio" id={`${attribute}_${choice}`}  value={choice}
                       name={attribute} disabled={notEditable}
                       checked={choice==object[attribute] ? true : false }
-                      onClick={handleClick}
+                      onChange={handleClick}
                       />
               <label htmlFor={choice}>{titleCase(choice, "_")}</label>
             </span>
