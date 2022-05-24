@@ -23,6 +23,7 @@ type Storage interface {
 	UpdateUser(request api.UpdateUserRequest) error
 	GetUser(userID int) (api.User, error)
 	GetUsers() ([]api.User, error)
+	GetUserByEmail(userEmail string) (api.User, error)
 }
 
 type storage struct {
@@ -159,5 +160,25 @@ func (s *storage) GetUser(userID int) (api.User, error) {
 		return api.User{}, err
 	}
 
+	return user, nil
+}
+
+// queries for a user with given email. Returns
+func (s *storage) GetUserByEmail(userEmail string) (user api.User, err error) {
+	getUserByEmailStatement := `
+		;
+	`
+
+	err = s.db.QueryRow(getUserByEmailStatement, userEmail).Scan(&user.ID, &user.Name, &user.Age, &user.Height, &user.Sex, &user.ActivityLevel, &user.Email, &user.WeightGoal)
+
+	// no user with the given email was found in this case
+	if errors.Is(err, sql.ErrNoRows) {
+		return api.User{}, nil
+	} else if err != nil {
+		log.Printf("this was the error: %v", err.Error())
+		return api.User{}, err
+	}
+
+	// return the queried user if it does exist
 	return user, nil
 }
