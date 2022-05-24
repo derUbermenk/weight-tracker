@@ -19,6 +19,7 @@ type UserRepository interface {
 	UpdateUser(UpdateUserRequest) error
 	GetUser(userID int) (User, error)
 	GetUsers() ([]User, error)
+	GetUserByEmail(userEmail string) (User, error)
 }
 
 type userService struct {
@@ -78,15 +79,37 @@ func (u *userService) New(user NewUserRequest) error {
 		return errors.New("user service - weight goal required")
 	}
 
+	existingEmail, err := emailExists(user.Email, u.storage)
+
+	if err != nil {
+		return err
+	}
+
+	if existingEmail {
+		return errors.New("user service - user with email already exists")
+	}
+
 	// do some basic normalisation
 	user.Name = strings.ToLower(user.Name)
 	user.Email = strings.TrimSpace(user.Email)
 
-	err := u.storage.CreateUser(user)
+	err = u.storage.CreateUser(user)
 
 	if err != nil {
 		return err
 	}
 
 	return nil
+}
+
+func getUserByEmail(email string, storage UserRepository) (User, error) {
+	user, err := storage.GetUserByEmail(email)
+
+	return user, err
+}
+
+func emailExists(email string, storage UserRepository) (bool, error) {
+	user, err := storage.GetUserByEmail(email)
+
+	return user != User{}, err
 }
