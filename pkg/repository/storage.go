@@ -18,7 +18,7 @@ import (
 
 type Storage interface {
 	RunMigrations(connectionString string) error
-	CreateUser(request api.NewUserRequest) error
+	CreateUser(request api.NewUserRequest) (userID int, err error)
 	CreateWeightEntry(request api.Weight) error
 	UpdateUser(request api.UpdateUserRequest) error
 	GetUser(userID int) (api.User, error)
@@ -63,20 +63,20 @@ func (s *storage) RunMigrations(connectionString string) error {
 	return nil
 }
 
-func (s *storage) CreateUser(request api.NewUserRequest) error {
+func (s *storage) CreateUser(request api.NewUserRequest) (userID int, err error) {
 	newUserStatement := `
 		INSERT INTO "user" (name, age, height, sex, activity_level, email, weight_goal)
-		VALUES ($1, $2, $3, $4, $5, $6, $7);
+		VALUES ($1, $2, $3, $4, $5, $6, $7)
+		RETURNING id;
 		`
-
-	err := s.db.QueryRow(newUserStatement, request.Name, request.Age, request.Height, request.Sex, request.ActivityLevel, request.Email, request.WeightGoal).Err()
+	err = s.db.QueryRow(newUserStatement, request.Name, request.Age, request.Height, request.Sex, request.ActivityLevel, request.Email, request.WeightGoal).Scan(&userID)
 
 	if err != nil {
 		log.Printf("this was the error: %v", err.Error())
-		return err
+		return
 	}
 
-	return nil
+	return
 }
 
 func (s *storage) UpdateUser(request api.UpdateUserRequest) error {
