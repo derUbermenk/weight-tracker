@@ -12,16 +12,29 @@ type mockUserRepo struct {
 }
 
 func (m mockUserRepo) CreateUser(request api.NewUserRequest) error {
-	if request.Name == "test user already created" {
-		return errors.New("user service - user with email already exists")
-	}
+	return nil
+}
 
+func (m mockUserRepo) GetUser(userID int) (api.User, error) {
+	return api.User{}, nil
+}
+
+func (m mockUserRepo) UpdateUser(request api.UpdateUserRequest) error {
 	return nil
 }
 
 func (m mockUserRepo) GetUsers() (users []api.User, err error) {
 	users = m.users
 	return
+}
+
+func (m mockUserRepo) GetUserByEmail(userEmail string) (api.User, error) {
+	// simulate returning a user with same email.
+	if userEmail == "taken_email@gmail.com" {
+		return api.User{Email: userEmail}, nil
+	}
+
+	return api.User{}, nil
 }
 
 func TestCreateNewUser(t *testing.T) {
@@ -78,9 +91,9 @@ func TestCreateNewUser(t *testing.T) {
 				WeightGoal:    "maintain",
 				Sex:           "female",
 				ActivityLevel: 5,
-				Email:         "test_user@gmail.com",
+				Email:         "taken_email@gmail.com",
 			},
-			want: errors.New("repository - user with email already exists"),
+			want: errors.New("user service - user with email already exists"),
 		},
 	}
 
