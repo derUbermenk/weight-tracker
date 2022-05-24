@@ -166,8 +166,9 @@ func (s *storage) GetUser(userID int) (api.User, error) {
 // queries for a user with given email. Returns
 func (s *storage) GetUserByEmail(userEmail string) (user api.User, err error) {
 	getUserByEmailStatement := `
-		;
-	`
+		SELECT id, name, age, height, sex, activity_level, email, weight_goal FROM "user"
+		where email=$1;
+		`
 
 	err = s.db.QueryRow(getUserByEmailStatement, userEmail).Scan(&user.ID, &user.Name, &user.Age, &user.Height, &user.Sex, &user.ActivityLevel, &user.Email, &user.WeightGoal)
 
