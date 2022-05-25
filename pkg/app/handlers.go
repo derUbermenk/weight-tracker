@@ -63,29 +63,41 @@ func (s *Server) CreateUser() gin.HandlerFunc {
 		c.Header("Content-Type", "application/json")
 
 		var newUser api.NewUserRequest
+		var userID int
+		var response = struct {
+			Status string
+			Data   string
+			UserID int
+		}{
+			Status: "failed",
+			UserID: userID,
+		}
 
 		err := c.ShouldBindJSON(&newUser)
 
 		if err != nil {
+			response.Data = err.Error()
+
 			log.Printf("handler error: %v", err)
-			c.JSON(http.StatusBadRequest, nil)
+			c.JSON(http.StatusBadRequest, response)
 			return
 		}
 
-		err = s.userService.New(newUser)
+		userID, err = s.userService.New(newUser)
 
 		if err != nil {
+			response.Data = err.Error()
+
 			log.Printf("service error: %v", err)
-			c.JSON(http.StatusInternalServerError, nil)
+			c.JSON(http.StatusInternalServerError, response)
 			return
 		}
 
-		response := map[string]string{
-			"status": "success",
-			"data":   "new user created",
-		}
+		response.Status = "success"
+		response.Data = "user created"
+		response.UserID = userID
 
-		c.JSON(http.StatusOK, response)
+		c.JSON(http.StatusCreated, response)
 	}
 }
 

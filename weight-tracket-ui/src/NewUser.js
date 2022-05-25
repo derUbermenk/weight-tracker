@@ -37,13 +37,13 @@ function NewUser() {
 
     // send save user request; then get status
     const json = await saveUser(user)
-    const status = json['status']
-    const data = json['data']
+    const status = json['Status']
+    const data = json['Data']
+    const user_id = json['UserID']
 
     // do something about status
     if (status == 'success') {
-      const user = json['user']
-      navigate(`/user/${user.id}`)
+      navigate(`/user/${user_id}`)
     } else {
       alert(`${status} because ${data}`)
       // do not change user

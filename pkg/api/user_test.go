@@ -11,11 +11,48 @@ type mockUserRepo struct {
 	users []api.User
 }
 
-func (m mockUserRepo) CreateUser(request api.NewUserRequest) error {
-	if request.Name == "test user already created" {
-		return errors.New("repository - user already exists in database")
+var taken_email = "taken_email@email.com"
+
+var users = []api.User{
+	api.User{
+		ID:            1,
+		Name:          "Rabbit",
+		Age:           2,
+		Height:        3,
+		Sex:           "female",
+		ActivityLevel: 2,
+		WeightGoal:    "heavy",
+		Email:         "some_email@email.com",
+	},
+	api.User{
+		ID:            1,
+		Name:          "Mole",
+		Age:           2,
+		Height:        3,
+		Sex:           "female",
+		ActivityLevel: 2,
+		WeightGoal:    "heavy",
+		Email:         taken_email,
+	},
+}
+
+func (m mockUserRepo) CreateUser(request api.NewUserRequest) (userID int, err error) {
+	return userID, nil
+}
+
+func (m mockUserRepo) GetUser(userID int) (api.User, error) {
+	return api.User{}, nil
+}
+
+func (m mockUserRepo) GetUserByEmail(userEmail string) (api.User, error) {
+	if userEmail == taken_email {
+		return m.users[1], nil
 	}
 
+	return api.User{}, nil
+}
+
+func (m mockUserRepo) UpdateUser(request api.UpdateUserRequest) error {
 	return nil
 }
 
@@ -25,13 +62,14 @@ func (m mockUserRepo) GetUsers() (users []api.User, err error) {
 }
 
 func TestCreateNewUser(t *testing.T) {
-	mockRepo := mockUserRepo{}
+	mockRepo := mockUserRepo{users: users}
 	mockUserService := api.NewUserService(&mockRepo)
 
 	tests := []struct {
-		name    string
-		request api.NewUserRequest
-		want    error
+		name     string
+		request  api.NewUserRequest
+		want_err error
+		want_id  int
 	}{
 		{
 			name: "should create a new user successfully",
@@ -44,7 +82,8 @@ func TestCreateNewUser(t *testing.T) {
 				ActivityLevel: 5,
 				Email:         "test_user@gmail.com",
 			},
-			want: nil,
+			want_err: nil,
+			want_id:  0,
 		}, {
 			name: "should return an error because of missing email",
 			request: api.NewUserRequest{
@@ -56,7 +95,8 @@ func TestCreateNewUser(t *testing.T) {
 				ActivityLevel: 5,
 				Email:         "",
 			},
-			want: errors.New("user service - email required"),
+			want_err: errors.New("user service - email required"),
+			want_id:  0,
 		}, {
 			name: "should return an error because of missing name",
 			request: api.NewUserRequest{
@@ -68,28 +108,34 @@ func TestCreateNewUser(t *testing.T) {
 				ActivityLevel: 5,
 				Email:         "test_user@gmail.com",
 			},
-			want: errors.New("user service - name required"),
+			want_err: errors.New("user service - name required"),
+			want_id:  0,
 		}, {
-			name: "should return error from database because user already exists",
+			name: "should return error because user with email already exists",
 			request: api.NewUserRequest{
-				Name:          "test user already created",
+				Name:          "test user with email exists",
 				Age:           20,
 				Height:        180,
 				WeightGoal:    "maintain",
 				Sex:           "female",
 				ActivityLevel: 5,
-				Email:         "test_user@gmail.com",
+				Email:         "taken_email@email.com",
 			},
-			want: errors.New("repository - user already exists in database"),
+			want_err: errors.New("user service - user with email already exists"),
+			want_id:  0,
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			err := mockUserService.New(test.request)
+			userID, err := mockUserService.New(test.request)
 
-			if !reflect.DeepEqual(err, test.want) {
-				t.Errorf("test: %v failed. got: %v, wanted: %v", test.name, err, test.want)
+			if !reflect.DeepEqual(err, test.want_err) {
+				t.Errorf("test: %v failed. got: %v, wanted: %v", test.name, err, test.want_err)
+			}
+
+			if userID != test.want_id {
+				t.Errorf("test: %v failed. got: %v, wanted: %v", test.name, err, test.want_err)
 			}
 		})
 	}
@@ -98,28 +144,6 @@ func TestCreateNewUser(t *testing.T) {
 func TestGetAllUser(t *testing.T) {
 	mockRepo := mockUserRepo{}
 	mockUserService := api.NewUserService(&mockRepo)
-	users := []api.User{
-		api.User{
-			ID:            1,
-			Name:          "Rabbit",
-			Age:           2,
-			Height:        3,
-			Sex:           "female",
-			ActivityLevel: 2,
-			WeightGoal:    "heavy",
-			Email:         "light@email.com",
-		},
-		api.User{
-			ID:            1,
-			Name:          "Mole",
-			Age:           2,
-			Height:        3,
-			Sex:           "female",
-			ActivityLevel: 2,
-			WeightGoal:    "heavy",
-			Email:         "light2@email.com",
-		},
-	}
 
 	tests := []struct {
 		name       string

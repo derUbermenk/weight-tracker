@@ -16,6 +16,7 @@ async function getUser(userId, userSetter) {
   userSetter(user)
 }
 
+/*
 /** 
  * update the user in server with current user credentials
  * @param {int} userId the user's id
@@ -23,6 +24,7 @@ async function getUser(userId, userSetter) {
  * @param {Function} userGetter fetches updated user
  }}
 */
+/*
 async function updateUser(userId, user, userGetter) {
   const requestUrl = `http://localhost:8080/v1/api/user/${userId}`
   const requestOptions = {
@@ -36,6 +38,21 @@ async function updateUser(userId, user, userGetter) {
   const data = await response.json();
 
   userGetter()
+}
+*/
+
+async function updateUser(userId, user) {
+  const requestUrl = `http://localhost:8080/v1/api/user/${userId}`
+  const requestOptions = {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(user)
+  }
+  const request = new Request(requestUrl, requestOptions) 
+
+  const response = await fetch(request);
+  const json = await response.json()
+  return json
 }
 
 function User() {
@@ -59,9 +76,29 @@ function User() {
     setisNotEdit(false) // make user editable
   }
 
+  /*
   const handleSave = () => {
     updateUser(userId, user, () => getUser(userId, (user) => setUser(user)))
     setisNotEdit(true) // make user non editable
+  }
+  */
+
+  const handleSave = async (e) => {
+    e.preventDefault();
+
+    // send update user request
+    const json = await updateUser(userId, user)
+    const status = json['Status']
+    const data = json['Data']
+
+    // do something about status
+    if (status == 'success') {
+      // set user as updated user data
+      const updated_user = json['User']
+      setUser(updated_user)
+    } else {
+      alert(`${status} because ${data}`)
+    }
   }
 
   return (
@@ -72,13 +109,10 @@ function User() {
         {JSON.stringify(user)}
       </div>
       <br></br>
-      { isNotEdit ? 
-        <Button name={'Edit'} onclick={handleEdit}/> :
-        <Button name={'Save'} onclick={handleSave}/> } 
 
-      <form>
-        <TextAttributes object={user} attribute="name" notEditable={isNotEdit} onChange={handleUserChange}/>
-        <TextAttributes object={user} attribute="email" notEditable={isNotEdit} onChange={handleUserChange}/>
+      <form onSubmit={handleSave}>
+        <TextAttributes object={user} attribute="name" notEditable={isNotEdit} onChange={handleUserChange} type="text"/>
+        <TextAttributes object={user} attribute="email" notEditable={isNotEdit} onChange={handleUserChange} type="email"/>
         <NumberAttributes object={user} attribute="age" notEditable={isNotEdit} onChange={handleUserChange}/>
         <NumberAttributes object={user} attribute="height" notEditable={isNotEdit} onChange={handleUserChange}/>
         <RadioAttributes 
@@ -87,6 +121,12 @@ function User() {
           notEditable={isNotEdit} 
           choices={["male", "female"]}
           onClick={handleUserChange} />
+
+        { isNotEdit ?
+          <Button name={'Edit'} onclick={handleEdit}/> :
+          <input type="submit" value="Save"></input>
+        }
+
       </form>
     </div>
   )

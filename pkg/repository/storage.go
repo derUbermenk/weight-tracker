@@ -18,11 +18,12 @@ import (
 
 type Storage interface {
 	RunMigrations(connectionString string) error
-	CreateUser(request api.NewUserRequest) error
+	CreateUser(request api.NewUserRequest) (userID int, err error)
 	CreateWeightEntry(request api.Weight) error
 	UpdateUser(request api.UpdateUserRequest) error
 	GetUser(userID int) (api.User, error)
 	GetUsers() ([]api.User, error)
+	GetUserByEmail(userEmail string) (api.User, error)
 }
 
 type storage struct {
@@ -62,20 +63,20 @@ func (s *storage) RunMigrations(connectionString string) error {
 	return nil
 }
 
-func (s *storage) CreateUser(request api.NewUserRequest) error {
+func (s *storage) CreateUser(request api.NewUserRequest) (userID int, err error) {
 	newUserStatement := `
 		INSERT INTO "user" (name, age, height, sex, activity_level, email, weight_goal)
-		VALUES ($1, $2, $3, $4, $5, $6, $7);
+		VALUES ($1, $2, $3, $4, $5, $6, $7)
+		RETURNING id;
 		`
-
-	err := s.db.QueryRow(newUserStatement, request.Name, request.Age, request.Height, request.Sex, request.ActivityLevel, request.Email, request.WeightGoal).Err()
+	err = s.db.QueryRow(newUserStatement, request.Name, request.Age, request.Height, request.Sex, request.ActivityLevel, request.Email, request.WeightGoal).Scan(&userID)
 
 	if err != nil {
 		log.Printf("this was the error: %v", err.Error())
-		return err
+		return
 	}
 
-	return nil
+	return
 }
 
 func (s *storage) UpdateUser(request api.UpdateUserRequest) error {
@@ -159,5 +160,26 @@ func (s *storage) GetUser(userID int) (api.User, error) {
 		return api.User{}, err
 	}
 
+	return user, nil
+}
+
+// queries for a user with given email. Returns
+func (s *storage) GetUserByEmail(userEmail string) (user api.User, err error) {
+	getUserByEmailStatement := `
+		SELECT id, name, age, height, sex, activity_level, email, weight_goal FROM "user"
+		where email=$1;
+		`
+
+	err = s.db.QueryRow(getUserByEmailStatement, userEmail).Scan(&user.ID, &user.Name, &user.Age, &user.Height, &user.Sex, &user.ActivityLevel, &user.Email, &user.WeightGoal)
+
+	// no user with the given email was found in this case
+	if errors.Is(err, sql.ErrNoRows) {
+		return api.User{}, nil
+	} else if err != nil {
+		log.Printf("this was the error: %v", err.Error())
+		return api.User{}, err
+	}
+
+	// return the queried user if it does exist
 	return user, nil
 }
