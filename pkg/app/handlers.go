@@ -131,7 +131,7 @@ func (s *Server) UpdateUser() gin.HandlerFunc {
 			response.Data = err.Error()
 
 			log.Printf("service error: %v", err)
-			c.JSON(http.StatusInternalServerError, nil)
+			c.JSON(http.StatusInternalServerError, response)
 			return
 		}
 
