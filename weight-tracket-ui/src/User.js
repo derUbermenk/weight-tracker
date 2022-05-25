@@ -59,9 +59,29 @@ function User() {
     setisNotEdit(false) // make user editable
   }
 
+  /*
   const handleSave = () => {
     updateUser(userId, user, () => getUser(userId, (user) => setUser(user)))
     setisNotEdit(true) // make user non editable
+  }
+  */
+
+  const handleSave = async (e) => {
+    e.preventDefault();
+
+    // send update user request
+    const json = await updateUser(userId, user, ()=>{})
+    const status = json['Status']
+    const data = json['Data']
+
+    // do something about status
+    if (status == 'success') {
+      // set user as updated user data
+      const updated_user = json['User']
+      setUser(updated_user)
+    } else {
+      alert(`${status} because ${data}`)
+    }
   }
 
   return (
