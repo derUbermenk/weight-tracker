@@ -74,8 +74,8 @@ function User() {
       <br></br>
 
       <form onSubmit={handleSave}>
-        <TextAttributes object={user} attribute="name" notEditable={isNotEdit} onChange={handleUserChange}/>
-        <TextAttributes object={user} attribute="email" notEditable={isNotEdit} onChange={handleUserChange}/>
+        <TextAttributes object={user} attribute="name" notEditable={isNotEdit} onChange={handleUserChange} type="text"/>
+        <TextAttributes object={user} attribute="email" notEditable={isNotEdit} onChange={handleUserChange} type="email"/>
         <NumberAttributes object={user} attribute="age" notEditable={isNotEdit} onChange={handleUserChange}/>
         <NumberAttributes object={user} attribute="height" notEditable={isNotEdit} onChange={handleUserChange}/>
         <RadioAttributes 
