@@ -8,7 +8,7 @@ import (
 // UserService contains the methods of the user service
 type UserService interface {
 	New(user NewUserRequest) (createdUserID int, err error)
-	Update(user UpdateUserRequest) error
+	Update(user UpdateUserRequest) (User, error)
 	GetUser(id int) (user User, err error)
 	All() (users []User, err error)
 }
@@ -16,7 +16,7 @@ type UserService interface {
 // UserRepository is what lets our service do db operations without knowing anything about the implementation
 type UserRepository interface {
 	CreateUser(NewUserRequest) (userID int, err error)
-	UpdateUser(UpdateUserRequest) error
+	UpdateUser(UpdateUserRequest) (User, error)
 	GetUser(userID int) (User, error)
 	GetUserByEmail(userEmail string) (user User, err error)
 	GetUsers() ([]User, error)
