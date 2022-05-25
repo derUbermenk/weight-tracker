@@ -52,8 +52,8 @@ func (m mockUserRepo) GetUserByEmail(userEmail string) (api.User, error) {
 	return api.User{}, nil
 }
 
-func (m mockUserRepo) UpdateUser(request api.UpdateUserRequest) error {
-	return nil
+func (m mockUserRepo) UpdateUser(request api.UpdateUserRequest) (api.User, error) {
+	return api.User{}, nil
 }
 
 func (m mockUserRepo) GetUsers() (users []api.User, err error) {
@@ -147,6 +147,7 @@ func TestGetAllUser(t *testing.T) {
 
 	tests := []struct {
 		name       string
+		request    api.NewUserRequest
 		want_users []api.User
 		want_error error
 	}{
@@ -178,6 +179,47 @@ func TestGetAllUser(t *testing.T) {
 
 			if !reflect.DeepEqual(queried_users, test.want_users) {
 				t.Errorf("test: %v failed. got: %v, wanted: %v", test.name, queried_users, test.want_users)
+			}
+		})
+	}
+}
+
+func TestUpdateUser(t *testing.T) {
+	mockRepo := mockUserRepo{users: users}
+	mockUserService := api.NewUserService(&mockRepo)
+
+	tests := []struct {
+		name       string
+		request    api.UpdateUserRequest
+		want_user  api.User
+		want_error error
+	}{
+		{
+			name: "should return an error because there is an existing email",
+			request: api.UpdateUserRequest{
+				ID:         1,
+				Name:       "rabbit",
+				Age:        20,
+				Height:     250,
+				Sex:        "male",
+				WeightGoal: "maintain",
+				Email:      taken_email,
+			},
+			want_user:  api.User{},
+			want_error: errors.New("user service - user with email already exists"),
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			user, err := mockUserService.Update(test.request)
+
+			if errors.Is(err, test.want_error) {
+				t.Errorf("test: %v failed. got: %v, wanted: %v", test.name, err, test.want_error)
+			}
+
+			if user != test.want_user {
+				t.Errorf("test: %v failed. got: %v, wanted: %v", test.name, user, test.want_user)
 			}
 		})
 	}
