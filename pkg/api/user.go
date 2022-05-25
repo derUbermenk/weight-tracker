@@ -32,17 +32,27 @@ func NewUserService(userRepo UserRepository) UserService {
 	}
 }
 
-func (u *userService) Update(user UpdateUserRequest) error {
+func (u *userService) Update(user UpdateUserRequest) (updatedUser User, err error) {
 	user.Name = strings.ToLower(user.Name)
 	user.Email = strings.TrimSpace(user.Email)
 
-	err := u.storage.UpdateUser(user)
+	var exists bool
+	exists, err = emailExists(u.storage.GetUserByEmail, user.Email)
 
 	if err != nil {
-		return err
+		return
+	} else if exists {
+		err = errors.New("user service - user with email already exists")
+		return
 	}
 
-	return nil
+	updatedUser, err = u.storage.UpdateUser(user)
+
+	if err != nil {
+		return
+	}
+
+	return
 }
 
 func (u *userService) GetUser(userID int) (User, error) {
