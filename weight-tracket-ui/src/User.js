@@ -16,6 +16,7 @@ async function getUser(userId, userSetter) {
   userSetter(user)
 }
 
+/*
 /** 
  * update the user in server with current user credentials
  * @param {int} userId the user's id
@@ -23,6 +24,7 @@ async function getUser(userId, userSetter) {
  * @param {Function} userGetter fetches updated user
  }}
 */
+/*
 async function updateUser(userId, user, userGetter) {
   const requestUrl = `http://localhost:8080/v1/api/user/${userId}`
   const requestOptions = {
@@ -36,6 +38,21 @@ async function updateUser(userId, user, userGetter) {
   const data = await response.json();
 
   userGetter()
+}
+*/
+
+async function updateUser(userId, user) {
+  const requestUrl = `http://localhost:8080/v1/api/user/${userId}`
+  const requestOptions = {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(user)
+  }
+  const request = new Request(requestUrl, requestOptions) 
+
+  const response = await fetch(request);
+  const json = await response.json()
+  return json
 }
 
 function User() {
@@ -70,7 +87,7 @@ function User() {
     e.preventDefault();
 
     // send update user request
-    const json = await updateUser(userId, user, ()=>{})
+    const json = await updateUser(userId, user)
     const status = json['Status']
     const data = json['Data']
 
