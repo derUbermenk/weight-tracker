@@ -72,11 +72,8 @@ function User() {
         {JSON.stringify(user)}
       </div>
       <br></br>
-      { isNotEdit ? 
-        <Button name={'Edit'} onclick={handleEdit}/> :
-        <Button name={'Save'} onclick={handleSave}/> } 
 
-      <form>
+      <form onSubmit={handleSave}>
         <TextAttributes object={user} attribute="name" notEditable={isNotEdit} onChange={handleUserChange}/>
         <TextAttributes object={user} attribute="email" notEditable={isNotEdit} onChange={handleUserChange}/>
         <NumberAttributes object={user} attribute="age" notEditable={isNotEdit} onChange={handleUserChange}/>
@@ -87,6 +84,12 @@ function User() {
           notEditable={isNotEdit} 
           choices={["male", "female"]}
           onClick={handleUserChange} />
+
+        { isNotEdit ?
+          <Button name={'Edit'} onclick={handleEdit}/> :
+          <input type="submit" value="Save"></input>
+        }
+
       </form>
     </div>
   )
