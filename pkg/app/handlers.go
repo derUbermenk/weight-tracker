@@ -106,27 +106,38 @@ func (s *Server) UpdateUser() gin.HandlerFunc {
 		c.Header("Content-Type", "application/json")
 
 		var updateUser api.UpdateUserRequest
+		var user api.User
+		var response = struct {
+			Status string
+			Data   string
+			User   api.User
+		}{
+			Status: "failed",
+		}
 
 		err := c.ShouldBindJSON(&updateUser)
 
 		if err != nil {
+			response.Data = err.Error()
+
 			log.Printf("handler error: %v", err)
 			c.JSON(http.StatusBadRequest, nil)
 			return
 		}
 
-		err = s.userService.Update(updateUser)
+		user, err = s.userService.Update(updateUser)
 
 		if err != nil {
+			response.Data = err.Error()
+
 			log.Printf("service error: %v", err)
 			c.JSON(http.StatusInternalServerError, nil)
 			return
 		}
 
-		response := map[string]string{
-			"status": "success",
-			"data":   "user updated",
-		}
+		response.Status = "success"
+		response.Data = "user updated"
+		response.User = user
 
 		c.JSON(http.StatusOK, response)
 	}
