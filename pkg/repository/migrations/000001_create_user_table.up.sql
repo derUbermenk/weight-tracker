@@ -1,7 +1,7 @@
 CREATE TABLE IF NOT EXISTS "user"(
     id serial PRIMARY KEY,
     created_at      timestamp with time zone default now() not null,
-    updated_at      timestamp with time zone,
+    updated_at      timestamp with time zone default now() not null,
     name varchar(255) not null,
     age integer not null,
     height integer not null,
