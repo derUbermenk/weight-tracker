@@ -20,7 +20,7 @@ type Storage interface {
 	RunMigrations(connectionString string) error
 	CreateUser(request api.NewUserRequest) (userID int, err error)
 	CreateWeightEntry(request api.Weight) error
-	UpdateUser(request api.UpdateUserRequest) error
+	UpdateUser(request api.UpdateUserRequest) (api.User, error)
 	GetUser(userID int) (api.User, error)
 	GetUsers() ([]api.User, error)
 	GetUserByEmail(userEmail string) (api.User, error)
@@ -79,25 +79,32 @@ func (s *storage) CreateUser(request api.NewUserRequest) (userID int, err error)
 	return
 }
 
-func (s *storage) UpdateUser(request api.UpdateUserRequest) error {
+func (s *storage) UpdateUser(request api.UpdateUserRequest) (user api.User, err error) {
 	updateUserStatement := `
 		UPDATE "user" 
 		SET name = $2, age = $3, height = $4,
 		sex = $5, activity_level = $6, email = $7, 
-		weight_goal = $8 WHERE id = $1;`
+		weight_goal = $8 WHERE id = $1
+		RETURNING id, name, age, height, sex, activity_level, email,	
+		weight_goal
+		;`
 
-	_, err := s.db.Exec(updateUserStatement,
+	err = s.db.QueryRow(updateUserStatement,
 		request.ID, request.Name, request.Age,
 		request.Height, request.Sex, request.ActivityLevel,
 		request.Email, request.WeightGoal,
+	).Scan(
+		&user.ID, &user.Name, &user.Age,
+		&user.Height, &user.Sex, &user.ActivityLevel,
+		&user.Email, &user.WeightGoal,
 	)
 
 	if err != nil {
 		log.Printf("this was the error: %v", err.Error())
-		return err
+		return
 	}
 
-	return nil
+	return
 }
 
 func (s *storage) CreateWeightEntry(request api.Weight) error {
