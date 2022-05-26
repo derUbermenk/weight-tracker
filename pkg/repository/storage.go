@@ -66,13 +66,11 @@ func (s *storage) RunMigrations(connectionString string) error {
 
 func (s *storage) CreateUser(request api.NewUserRequest) (userID int, err error) {
 	newUserStatement := `
-		INSERT INTO "user" (name, age, height, sex, activity_level, email, weight_goal, created_at, updated_at)
+		INSERT INTO "user" (name, age, height, sex, activity_level, email, weight_goal)
 		VALUES ($1, $2, $3, $4, $5, $6, $7)
 		RETURNING id;
 		`
-	creation_time := time.Now()
-
-	err = s.db.QueryRow(newUserStatement, request.Name, request.Age, request.Height, request.Sex, request.ActivityLevel, request.Email, request.WeightGoal, creation_time, creation_time).Scan(&userID)
+	err = s.db.QueryRow(newUserStatement, request.Name, request.Age, request.Height, request.Sex, request.ActivityLevel, request.Email, request.WeightGoal).Scan(&userID)
 
 	if err != nil {
 		log.Printf("this was the error: %v", err.Error())
@@ -87,15 +85,17 @@ func (s *storage) UpdateUser(request api.UpdateUserRequest) (user api.User, err 
 		UPDATE "user" 
 		SET name = $2, age = $3, height = $4,
 		sex = $5, activity_level = $6, email = $7, 
-		weight_goal = $8 WHERE id = $1
+		weight_goal = $8, updated_at = $9 WHERE id = $1
 		RETURNING id, name, age, height, sex, activity_level, email,	
 		weight_goal
 		;`
 
+	updateTime := time.Now()
+
 	err = s.db.QueryRow(updateUserStatement,
 		request.ID, request.Name, request.Age,
 		request.Height, request.Sex, request.ActivityLevel,
-		request.Email, request.WeightGoal,
+		request.Email, request.WeightGoal, updateTime,
 	).Scan(
 		&user.ID, &user.Name, &user.Age,
 		&user.Height, &user.Sex, &user.ActivityLevel,
@@ -130,7 +130,9 @@ func (s *storage) CreateWeightEntry(request api.Weight) error {
 
 func (s *storage) GetUsers() (users []api.User, err error) {
 	getAllUsersStatement := `
-		SELECT id, name, age, height, sex, activity_level, email, weight_goal FROM "user";
+		SELECT id, name, age, height, sex, activity_level, email, weight_goal,
+		created_at, updated_at
+		FROM "user";
 	`
 	// query users here
 	rows, err := s.db.Query(getAllUsersStatement)
@@ -146,6 +148,7 @@ func (s *storage) GetUsers() (users []api.User, err error) {
 			&user.ID, &user.Name, &user.Age,
 			&user.Height, &user.Sex, &user.ActivityLevel,
 			&user.Email, &user.WeightGoal,
+			&user.CreatedAt, &user.UpdatedAt,
 		); err != nil {
 			return
 		}
