@@ -8,11 +8,12 @@ import (
 )
 
 type mockUserRepo struct {
-	users []api.User
+	users map[int]api.User
 }
 
 var taken_email = "taken_email@email.com"
 
+/*
 var users = []api.User{
 	api.User{
 		ID:            1,
@@ -35,29 +36,86 @@ var users = []api.User{
 		Email:         taken_email,
 	},
 }
+*/
+
+var users = map[int]api.User{
+	1: api.User{
+		ID:            1,
+		Name:          "Rabbit",
+		Age:           2,
+		Height:        3,
+		Sex:           "female",
+		ActivityLevel: 2,
+		WeightGoal:    "heavy",
+		Email:         "some_email@email.com",
+	},
+	2: api.User{
+		ID:            2,
+		Name:          "Mole",
+		Age:           2,
+		Height:        3,
+		Sex:           "female",
+		ActivityLevel: 2,
+		WeightGoal:    "heavy",
+		Email:         taken_email,
+	},
+}
 
 func (m mockUserRepo) CreateUser(request api.NewUserRequest) (userID int, err error) {
 	return userID, nil
 }
 
 func (m mockUserRepo) GetUser(userID int) (api.User, error) {
-	return api.User{}, nil
+	return m.users[userID], nil
 }
 
 func (m mockUserRepo) GetUserByEmail(userEmail string) (api.User, error) {
-	if userEmail == taken_email {
-		return m.users[1], nil
+	// iterate over the items in m.users
+	// check email, and return email if theirs
+	for _, user := range m.users {
+		if user.Email == userEmail {
+			return user, nil
+		}
 	}
 
 	return api.User{}, nil
+	/*
+		if userEmail == taken_email {
+			return m.users[2], nil // 2 is assigned the taken email
+		}
+	*/
 }
 
 func (m mockUserRepo) UpdateUser(request api.UpdateUserRequest) (api.User, error) {
-	return api.User{}, nil
+	// assuming update has been validated
+	// create the new user struct and make it the value
+	// of the key identified by the user request key
+	user_update := api.User{
+		ID: request.ID, Name: request.Name,
+		Age: request.Age, Height: request.Height,
+		Sex: request.Sex, ActivityLevel: request.ActivityLevel,
+		Email: request.Email, WeightGoal: request.WeightGoal,
+	}
+	m.users[request.ID] = user_update
+
+	return m.users[request.ID], nil
 }
 
 func (m mockUserRepo) GetUsers() (users []api.User, err error) {
-	users = m.users
+	// iterate over m.users map, and add all the values to the returned
+	// users slice
+
+	/* this does not work since mapping is unordered
+	for _, user := range m.users {
+		users = append(users, user)
+	}
+	*/
+
+	// instead i iterate using the lenght of the users map
+	for i := 1; i <= len(m.users); i++ {
+		users = append(users, m.users[i])
+	}
+
 	return
 }
 
@@ -153,11 +211,15 @@ func TestGetAllUser(t *testing.T) {
 	}{
 		{
 			name:       "should return no users when there are none",
-			want_users: []api.User{},
+			want_users: nil, // changed from []api.User{} to nil because https://stackoverflow.com/questions/64643402/reflect-deepequal-is-returning-false-but-slices-are-same
+			// getUsers mockRepo method returns nil slice when no user is found
 			want_error: nil,
 		}, {
-			name:       "should return users when there are users",
-			want_users: users,
+			name: "should return users when there are users",
+			want_users: []api.User{
+				users[1],
+				users[2],
+			},
 			want_error: nil,
 		},
 	}
@@ -166,7 +228,7 @@ func TestGetAllUser(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			switch test.name {
 			case "should return no users when there are none":
-				mockRepo.users = []api.User{} // make sure there are no users
+				mockRepo.users = map[int]api.User{} // make sure there are no users
 			case "should return users when there are users":
 				mockRepo.users = users // use the predefined users
 			}
