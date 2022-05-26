@@ -13,33 +13,8 @@ type mockUserRepo struct {
 
 var taken_email = "taken_email@email.com"
 
-/*
-var users = []api.User{
-	api.User{
-		ID:            1,
-		Name:          "Rabbit",
-		Age:           2,
-		Height:        3,
-		Sex:           "female",
-		ActivityLevel: 2,
-		WeightGoal:    "heavy",
-		Email:         "some_email@email.com",
-	},
-	api.User{
-		ID:            1,
-		Name:          "Mole",
-		Age:           2,
-		Height:        3,
-		Sex:           "female",
-		ActivityLevel: 2,
-		WeightGoal:    "heavy",
-		Email:         taken_email,
-	},
-}
-*/
-
 var users = map[int]api.User{
-	1: api.User{
+	1: {
 		ID:            1,
 		Name:          "Rabbit",
 		Age:           2,
@@ -49,7 +24,7 @@ var users = map[int]api.User{
 		WeightGoal:    "heavy",
 		Email:         "some_email@email.com",
 	},
-	2: api.User{
+	2: {
 		ID:            2,
 		Name:          "Mole",
 		Age:           2,
@@ -260,13 +235,14 @@ func TestUpdateUser(t *testing.T) {
 			// updates used to not work when the user decides not to change own email
 			name: "should not return an error when the email is unchanged",
 			request: api.UpdateUserRequest{
-				ID:         1,
-				Name:       "rabbit",
-				Age:        20,
-				Height:     250,
-				Sex:        "male",
-				WeightGoal: "maintain",
-				Email:      taken_email,
+				ID:            1,
+				Name:          "rabbit",
+				Age:           20,
+				Height:        250,
+				Sex:           "male",
+				WeightGoal:    "maintain",
+				ActivityLevel: 2,
+				Email:         "some_email@email.com",
 			},
 			want_user: api.User{
 				ID:            1,
@@ -276,20 +252,45 @@ func TestUpdateUser(t *testing.T) {
 				Sex:           "male",
 				WeightGoal:    "maintain",
 				ActivityLevel: 2,
-				Email:         taken_email,
+				Email:         "some_email@email.com",
+			},
+			want_error: nil,
+		},
+		{
+			name: "should not return an error when the email is changed but it does not exist yet",
+			request: api.UpdateUserRequest{
+				ID:            1,
+				Name:          "rabbit",
+				Age:           20,
+				Height:        250,
+				Sex:           "male",
+				WeightGoal:    "maintain",
+				ActivityLevel: 2,
+				Email:         "unused@email.com",
+			},
+			want_user: api.User{
+				ID:            1,
+				Name:          "rabbit",
+				Age:           20,
+				Height:        250,
+				Sex:           "male",
+				WeightGoal:    "maintain",
+				ActivityLevel: 2,
+				Email:         "unused@email.com",
 			},
 			want_error: nil,
 		},
 		{
 			name: "should return an error because there is an existing email",
 			request: api.UpdateUserRequest{
-				ID:         1,
-				Name:       "rabbit",
-				Age:        20,
-				Height:     250,
-				Sex:        "male",
-				WeightGoal: "maintain",
-				Email:      taken_email,
+				ID:            1,
+				Name:          "rabbit",
+				Age:           20,
+				Height:        250,
+				Sex:           "male",
+				WeightGoal:    "maintain",
+				ActivityLevel: 2,
+				Email:         taken_email,
 			},
 			want_user:  api.User{},
 			want_error: errors.New("user service - user with email already exists"),
@@ -304,11 +305,11 @@ func TestUpdateUser(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			user, err := mockUserService.Update(test.request)
 
-			if errors.Is(err, test.want_error) {
+			if !reflect.DeepEqual(err, test.want_error) {
 				t.Errorf("test: %v failed. got: %v, wanted: %v", test.name, err, test.want_error)
 			}
 
-			if user != test.want_user {
+			if !reflect.DeepEqual(user, test.want_user) {
 				t.Errorf("test: %v failed. got: %v, wanted: %v", test.name, user, test.want_user)
 			}
 		})
