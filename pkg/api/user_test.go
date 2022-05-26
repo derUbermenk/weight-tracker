@@ -257,6 +257,31 @@ func TestUpdateUser(t *testing.T) {
 			want_error: nil,
 		},
 		{
+			// updates used to not work when the user decides not to change own email
+			name: "should update user when there is no conflict in email change",
+			request: api.UpdateUserRequest{
+				ID:            1,
+				Name:          "rabbit",
+				Age:           20,
+				Height:        250,
+				Sex:           "male",
+				WeightGoal:    "maintain",
+				ActivityLevel: 2,
+				Email:         "non_conflicting@email.com",
+			},
+			want_user: api.User{
+				ID:            1,
+				Name:          "rabbit",
+				Age:           20,
+				Height:        250,
+				Sex:           "male",
+				WeightGoal:    "maintain",
+				ActivityLevel: 2,
+				Email:         "non_conflicting@email.com",
+			},
+			want_error: nil,
+		},
+		{
 			name: "should not return an error when the email is changed but it does not exist yet",
 			request: api.UpdateUserRequest{
 				ID:            1,
