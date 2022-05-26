@@ -99,15 +99,13 @@ function User() {
     } else {
       alert(`${status} because ${data}`)
     }
+
+    setisNotEdit(true)
   }
 
   return (
     <div>
       <h1>Hello {`${user.name}`}!</h1>
-      <br></br>
-      <div>
-        {JSON.stringify(user)}
-      </div>
       <br></br>
 
       <form onSubmit={handleSave}>
