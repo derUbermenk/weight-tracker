@@ -2,6 +2,7 @@ package api
 
 import (
 	"errors"
+	"fmt"
 	"strings"
 )
 
@@ -37,12 +38,16 @@ func (u *userService) Update(user UpdateUserRequest) (updatedUser User, err erro
 	user.Email = strings.TrimSpace(user.Email)
 
 	var exists bool
+	var changed bool
+
+	changed, err = emailChanged(u.storage.GetUser, user.ID, user.Email)
 	exists, err = emailExists(u.storage.GetUserByEmail, user.Email)
 
 	if err != nil {
 		return
-	} else if exists {
+	} else if changed && exists {
 		err = errors.New("user service - user with email already exists")
+		fmt.Printf("user.go:46 - email \n  exists: %v \n  email: %v \n  error: %v \n\n", exists, user.Email, err)
 		return
 	}
 
@@ -117,9 +122,10 @@ func (u *userService) New(user NewUserRequest) (createdUserID int, err error) {
 
 type userGetterByEmail func(email string) (user User, err error)
 
-func emailExists(fn userGetterByEmail, email string) (exists bool, err error) {
+// checks if the email submitted is already used
+func emailExists(userGetter userGetterByEmail, email string) (exists bool, err error) {
 	var user User
-	user, err = fn(email)
+	user, err = userGetter(email)
 
 	if err != nil {
 		return
@@ -127,6 +133,22 @@ func emailExists(fn userGetterByEmail, email string) (exists bool, err error) {
 
 	// proceed with comparison
 	exists = user != User{}
+
+	return
+}
+
+type userGetter func(id int) (user User, err error)
+
+// checks if the submitted email is not the same as the users current email
+func emailChanged(userGetter userGetter, requestID int, requestEmail string) (unchanged bool, err error) {
+	var user User
+	user, err = userGetter(requestID) // get user
+
+	if err != nil {
+		return
+	}
+
+	unchanged = requestEmail != user.Email
 
 	return
 }
