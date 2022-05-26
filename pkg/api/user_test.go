@@ -120,8 +120,6 @@ func (m mockUserRepo) GetUsers() (users []api.User, err error) {
 }
 
 func TestCreateNewUser(t *testing.T) {
-	mockRepo := mockUserRepo{users: users}
-	mockUserService := api.NewUserService(&mockRepo)
 
 	tests := []struct {
 		name     string
@@ -185,6 +183,10 @@ func TestCreateNewUser(t *testing.T) {
 	}
 
 	for _, test := range tests {
+		test_users := copyUserMap(users)
+		mockRepo := mockUserRepo{users: test_users}
+		mockUserService := api.NewUserService(&mockRepo)
+
 		t.Run(test.name, func(t *testing.T) {
 			userID, err := mockUserService.New(test.request)
 
@@ -200,9 +202,6 @@ func TestCreateNewUser(t *testing.T) {
 }
 
 func TestGetAllUser(t *testing.T) {
-	mockRepo := mockUserRepo{}
-	mockUserService := api.NewUserService(&mockRepo)
-
 	tests := []struct {
 		name       string
 		request    api.NewUserRequest
@@ -225,12 +224,16 @@ func TestGetAllUser(t *testing.T) {
 	}
 
 	for _, test := range tests {
+		test_users := copyUserMap(users)
+		mockRepo := mockUserRepo{users: test_users}
+		mockUserService := api.NewUserService(&mockRepo)
+
 		t.Run(test.name, func(t *testing.T) {
 			switch test.name {
 			case "should return no users when there are none":
 				mockRepo.users = map[int]api.User{} // make sure there are no users
 			case "should return users when there are users":
-				mockRepo.users = users // use the predefined users
+				mockRepo.users = test_users // use the predefined users
 			}
 
 			queried_users, err := mockUserService.All()
@@ -247,15 +250,36 @@ func TestGetAllUser(t *testing.T) {
 }
 
 func TestUpdateUser(t *testing.T) {
-	mockRepo := mockUserRepo{users: users}
-	mockUserService := api.NewUserService(&mockRepo)
-
 	tests := []struct {
 		name       string
 		request    api.UpdateUserRequest
 		want_user  api.User
 		want_error error
 	}{
+		{
+			// updates used to not work when the user decides not to change own email
+			name: "should not return an error when the email is unchanged",
+			request: api.UpdateUserRequest{
+				ID:         1,
+				Name:       "rabbit",
+				Age:        20,
+				Height:     250,
+				Sex:        "male",
+				WeightGoal: "maintain",
+				Email:      taken_email,
+			},
+			want_user: api.User{
+				ID:            1,
+				Name:          "rabbit",
+				Age:           20,
+				Height:        250,
+				Sex:           "male",
+				WeightGoal:    "maintain",
+				ActivityLevel: 2,
+				Email:         taken_email,
+			},
+			want_error: nil,
+		},
 		{
 			name: "should return an error because there is an existing email",
 			request: api.UpdateUserRequest{
@@ -273,6 +297,10 @@ func TestUpdateUser(t *testing.T) {
 	}
 
 	for _, test := range tests {
+		test_users := copyUserMap(users)
+		mockRepo := mockUserRepo{users: test_users}
+		mockUserService := api.NewUserService(&mockRepo)
+
 		t.Run(test.name, func(t *testing.T) {
 			user, err := mockUserService.Update(test.request)
 
@@ -285,4 +313,15 @@ func TestUpdateUser(t *testing.T) {
 			}
 		})
 	}
+}
+
+// convenience function for copying user map therefore isolating changes to tests
+func copyUserMap(source_map map[int]api.User) (copied_map map[int]api.User) {
+	copied_map = make(map[int]api.User)
+
+	for k, v := range source_map {
+		copied_map[k] = v
+	}
+
+	return
 }
