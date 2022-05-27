@@ -5,25 +5,32 @@ function Table(props) {
 
   return(
     <table>
-      <tr>
-        {data_headers.map((data_header) => {
-          return <th>{data_header}</th>
-        })}
-      </tr>
+      <thead>
+        <tr>
+          {data_headers.map((data_header) => {
+            return <th key={data_header}>{data_header}</th>
+          })}
+        </tr>
+      </thead>
       
-      {
-        data_values.map( (entry) => {
-          return(
-            <tr>
-              {data_headers.map((data_header) => {
-                return <td>{entry[data_header]}</td>
-              }
-              )}
-              <td><a href={`/user/${entry.id}`}>{entry.name}</a></td>
-            </tr>
-          )
-        })
-      }
+      <tbody>
+        {
+          data_values.map( (entry) => {
+            return(
+              <tr key={entry.id}>
+                {data_headers.map((data_header) => {
+                  return <td key={data_header}>{entry[data_header]}</td>
+                }
+                )}
+                <td><a href={`/user/${entry.id}`}>{entry.name}</a></td>
+                <td>
+                  <span onClick={() => alert("tried delete")} className="material-icons md-18">close</span>
+                </td>
+              </tr>
+            )
+          })
+        }
+      </tbody>
     </table>
   )
 }
@@ -33,8 +40,8 @@ class Users extends Component {
     super(props);
 
     this.state = {
-      users: [],
-      keys: [],
+      users: {},
+      keys: []
     }
 
   }
@@ -42,10 +49,17 @@ class Users extends Component {
   setup_data() {
     fetch("http://localhost:8080/v1/api/user", {mode: "cors"})
       .then(response => response.json())
-      .then(data => this.setState({
-        users: data,
-        keys: Object.keys(data[0])
-      }))
+      .then(data => {
+        var fetched_users = {}
+        for(const user of data) {
+          fetched_users[user.id] = user
+        }
+
+        this.setState({
+          users: fetched_users,
+          keys: Object.keys(data[0])
+        })
+      })
   }
 
   componentDidMount() {
@@ -54,7 +68,6 @@ class Users extends Component {
 
   render() {
      const { users, keys } = this.state
-     // const keys = Object.keys(this.state.users[0])
 
     return (
       <div>
@@ -62,7 +75,7 @@ class Users extends Component {
         </div>
 
         <h1>Users</h1>
-        <Table data_values={users} data_headers={keys} />
+        <Table data_values={Object.values(users)} data_headers={keys} />
 
         <br></br>
         <a href="/user/new">Add User</a>
