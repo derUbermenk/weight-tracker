@@ -1,7 +1,12 @@
-import React, {Component} from "react";
+import React, {useEffect, useState} from "react";
 
 function Table(props) {
-  const { data_values, data_headers } = props
+  const { data_values, data_headers, onDelete } = props
+
+  const handleUserDelete = (e) => {
+    const userID = e.target.getAttribute("id")
+    onDelete(userID)
+  } 
 
   return(
     <table>
@@ -24,7 +29,7 @@ function Table(props) {
                 )}
                 <td><a href={`/user/${entry.id}`}>{entry.name}</a></td>
                 <td>
-                  <span onClick={() => alert("tried delete")} className="material-icons md-18">close</span>
+                  <span id={entry.id} onClick={handleUserDelete} className="material-icons md-18">close</span>
                 </td>
               </tr>
             )
@@ -35,53 +40,84 @@ function Table(props) {
   )
 }
 
-class Users extends Component {
-  constructor(props) {
-    super(props);
+async function getUsers(usersSetter, keysSetter) {
+  const requestUrl = `http://localhost:8080/v1/api/user`
+  const requestOptions = {
+    mode: 'cors'
+  }
 
-    this.state = {
-      users: {},
-      keys: []
+  const request = new Request(requestUrl, requestOptions)
+
+  const response = await fetch(request);
+  const users = await response.json();
+
+  usersSetter(users)
+
+  // sample a user
+  const sample_user = users[0]
+  const keys = Object.keys(sample_user)
+  keysSetter(keys)
+}
+
+function getKeys(users, keySetter) {
+  // get first user value
+  const user_sample = Object.values(users)
+  const keys = Object.keys(user_sample)
+
+  keySetter(keys)
+}
+
+async function deleteUser(userID) {
+  const requestUrl = `http://localhost:8080/v1/api/user/${userID}`
+  const requestOptions = {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+  }
+  const request = new Request(requestUrl, requestOptions) 
+
+  const response = await fetch(request);
+  const json = await response.json()
+  return json
+}
+
+
+function Users() {
+  const [users, setUsers] = useState({});
+  const [keys, setKeys] = useState([]);
+
+  // fetch users at render
+  useEffect(() => {
+    getUsers((users) => setUsers(users), (keys) => setKeys(keys));
+    },
+    []
+  )
+
+  const handleUserDeletion = async (userID) => {
+    const json = await deleteUser(userID)
+    const status = json['Status']
+    const data = json['Data']
+
+    if (status == 'success') {
+      const deletedUserID = json['UserID']
+      const updated_user_dict = delete users[deletedUserID]
+      setUsers(updated_user_dict)
+    } else {
+      alert(`${status} because ${data}`)
     }
+  } 
 
-  }
-
-  setup_data() {
-    fetch("http://localhost:8080/v1/api/user", {mode: "cors"})
-      .then(response => response.json())
-      .then(data => {
-        var fetched_users = {}
-        for(const user of data) {
-          fetched_users[user.id] = user
-        }
-
-        this.setState({
-          users: fetched_users,
-          keys: Object.keys(data[0])
-        })
-      })
-  }
-
-  componentDidMount() {
-    this.setup_data()
-  }
-
-  render() {
-     const { users, keys } = this.state
-
-    return (
+  return (
+    <div>
       <div>
-        <div>
-        </div>
-
-        <h1>Users</h1>
-        <Table data_values={Object.values(users)} data_headers={keys} />
-
-        <br></br>
-        <a href="/user/new">Add User</a>
       </div>
-    )
-  };
+
+      <h1>Users</h1>
+      <Table data_values={Object.values(users)} data_headers={keys} onDelete={handleUserDeletion} />
+
+      <br></br>
+      <a href="/user/new">Add User</a>
+    </div>
+  )
 }
 
 export default Users;
