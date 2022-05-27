@@ -120,6 +120,19 @@ func (u *userService) New(user NewUserRequest) (createdUserID int, err error) {
 	return
 }
 
+func (u *userService) Delete(userID int) (deletedUserID int, err error) {
+	deletedUserID, err = u.storage.DeleteUser(userID)
+
+	if err != nil {
+		return
+	} else if deletedUserID == 0 {
+		err = errors.New("user service - user does not exist")
+		return
+	}
+
+	return
+}
+
 type userGetterByEmail func(email string) (user User, err error)
 
 // checks if the email submitted is already used
