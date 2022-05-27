@@ -341,6 +341,47 @@ func TestUpdateUser(t *testing.T) {
 	}
 }
 
+func TestDeleteUser(t *testing.T) {
+
+	tests := []struct {
+		name       string
+		request    int
+		want_error error
+		want_id    int
+	}{
+		{
+			name:       "should delete user successfully since user exists",
+			request:    1,
+			want_error: nil,
+			want_id:    1,
+		},
+		{
+			name:       "should return an error when user with submitted id does not exist",
+			request:    25,
+			want_error: errors.New("user service - user with given id does not exist"),
+			want_id:    25,
+		},
+	}
+
+	for _, test := range tests {
+		test_users := copyUserMap(users)
+		mockRepo := mockUserRepo{users: test_users}
+		mockUserService := api.NewUserService(&mockRepo)
+
+		t.Run(test.name, func(t *testing.T) {
+			userID, err := mockUserService.Delete(test.request)
+
+			if !reflect.DeepEqual(err, test.want_error) {
+				t.Errorf("test: %v failed. got: %v, wanted: %v", test.name, err, test.want_error)
+			}
+
+			if !reflect.DeepEqual(userID, test.want_id) {
+				t.Errorf("test: %v failed. got: %v, wanted: %v", test.name, userID, test.want_id)
+			}
+		})
+	}
+}
+
 // convenience function for copying user map therefore isolating changes to tests
 func copyUserMap(source_map map[int]api.User) (copied_map map[int]api.User) {
 	copied_map = make(map[int]api.User)
