@@ -9,6 +9,7 @@ import (
 // UserService contains the methods of the user service
 type UserService interface {
 	New(user NewUserRequest) (createdUserID int, err error)
+	Delete(userID int) (deletedUserID int, err error)
 	Update(user UpdateUserRequest) (User, error)
 	GetUser(id int) (user User, err error)
 	All() (users []User, err error)
