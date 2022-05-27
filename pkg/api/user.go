@@ -17,6 +17,7 @@ type UserService interface {
 // UserRepository is what lets our service do db operations without knowing anything about the implementation
 type UserRepository interface {
 	CreateUser(NewUserRequest) (userID int, err error)
+	DeleteUser(userID int) (deletedUserID int, err error)
 	UpdateUser(UpdateUserRequest) (User, error)
 	GetUser(userID int) (User, error)
 	GetUserByEmail(userEmail string) (user User, err error)
