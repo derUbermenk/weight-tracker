@@ -82,6 +82,19 @@ func (s *storage) CreateUser(request api.NewUserRequest) (userID int, err error)
 }
 
 func (s *storage) DeleteUser(userID int) (deletedUserID int, err error) {
+	deleteUserStatement := `
+	DELETE FROM "user" 
+	WHERE id=$1
+	RETURNING id ;
+	`
+
+	err = s.db.QueryRow(deleteUserStatement, userID).Scan(&deletedUserID)
+
+	if err != nil {
+		log.Printf("storage error - this was the error: %v", err.Error())
+		return
+	}
+
 	return
 }
 
