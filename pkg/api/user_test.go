@@ -369,7 +369,7 @@ func TestDeleteUser(t *testing.T) {
 			name:       "should return an error when user with submitted id does not exist",
 			request:    25,
 			want_error: errors.New("user service - user with given id does not exist"),
-			want_id:    25,
+			want_id:    0,
 		},
 	}
 
