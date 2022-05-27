@@ -12,12 +12,16 @@ function Table(props) {
     <table>
       <thead>
         <tr>
-          {data_headers.map((data_header) => {
-            return <th key={data_header}>{data_header}</th>
-          })}
+          {
+            data_values.length == 0 ?
+            <th><i>No users</i></th>:
+            data_headers.map((data_header) => {
+              return <th key={data_header}>{data_header}</th>
+            })
+          }
         </tr>
       </thead>
-      
+
       <tbody>
         {
           data_values.map( (entry) => {
@@ -51,27 +55,21 @@ async function getUsers(usersSetter, keysSetter) {
   const response = await fetch(request);
   const users = await response.json();
 
-  usersSetter(users)
-
-  // sample a user
-  const sample_user = users[0]
-  const keys = Object.keys(sample_user)
-  keysSetter(keys)
-}
-
-function getKeys(users, keySetter) {
-  // get first user value
-  const user_sample = Object.values(users)
-  const keys = Object.keys(user_sample)
-
-  keySetter(keys)
+  if (users == null) {
+    // pass
+  } else {
+    usersSetter(users)
+    // sample a user
+    const sample_user = users[0]
+    const keys = Object.keys(sample_user)
+    keysSetter(keys)
+  }
 }
 
 async function deleteUser(userID) {
   const requestUrl = `http://localhost:8080/v1/api/user/${userID}`
   const requestOptions = {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
+    method: 'DELETE'
   }
   const request = new Request(requestUrl, requestOptions) 
 
