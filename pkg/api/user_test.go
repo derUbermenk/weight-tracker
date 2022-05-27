@@ -94,6 +94,16 @@ func (m mockUserRepo) GetUsers() (users []api.User, err error) {
 	return
 }
 
+func (m mockUserRepo) DeleteUser(userID int) (deletedUserID int, err error) {
+	_, present := m.users[userID]
+
+	if !present {
+		return 0, nil
+	}
+
+	return userID, nil
+}
+
 func TestCreateNewUser(t *testing.T) {
 
 	tests := []struct {
