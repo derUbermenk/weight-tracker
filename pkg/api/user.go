@@ -128,7 +128,7 @@ func (u *userService) Delete(userID int) (deletedUserID int, err error) {
 	if err != nil {
 		return
 	} else if deletedUserID == 0 {
-		err = errors.New("user service - user does not exist")
+		err = errors.New("user service - user with given id does not exist")
 		return
 	}
 
