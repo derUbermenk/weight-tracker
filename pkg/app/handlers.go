@@ -101,6 +101,42 @@ func (s *Server) CreateUser() gin.HandlerFunc {
 	}
 }
 
+func (s *Server) DeleteUser() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		c.Header("Content-Type", "application/json")
+
+		userID, err := strconv.Atoi(c.Param("userId"))
+		var response = struct {
+			Status string
+			Data   string
+			UserID int
+		}{
+			Status: "failed",
+			UserID: userID,
+		}
+
+		if err != nil {
+			response.Data = err.Error()
+			log.Printf("handler error: %v", err)
+			c.JSON(http.StatusBadRequest, nil)
+			return
+		}
+
+		userID, err = s.userService.Delete(userID)
+
+		if err != nil {
+			response.Data = err.Error()
+			log.Printf("handler error: %v", err)
+			c.JSON(http.StatusInternalServerError, nil)
+			return
+		}
+
+		response.Status = "success"
+		response.Data = "user deleted"
+		c.JSON(http.StatusOK, response)
+	}
+}
+
 func (s *Server) UpdateUser() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")
