@@ -9,6 +9,7 @@ import (
 // UserService contains the methods of the user service
 type UserService interface {
 	New(user NewUserRequest) (createdUserID int, err error)
+	Delete(userID int) (deletedUserID int, err error)
 	Update(user UpdateUserRequest) (User, error)
 	GetUser(id int) (user User, err error)
 	All() (users []User, err error)
@@ -17,6 +18,7 @@ type UserService interface {
 // UserRepository is what lets our service do db operations without knowing anything about the implementation
 type UserRepository interface {
 	CreateUser(NewUserRequest) (userID int, err error)
+	DeleteUser(userID int) (deletedUserID int, err error)
 	UpdateUser(UpdateUserRequest) (User, error)
 	GetUser(userID int) (User, error)
 	GetUserByEmail(userEmail string) (user User, err error)
@@ -114,6 +116,19 @@ func (u *userService) New(user NewUserRequest) (createdUserID int, err error) {
 	createdUserID, err = u.storage.CreateUser(user)
 
 	if err != nil {
+		return
+	}
+
+	return
+}
+
+func (u *userService) Delete(userID int) (deletedUserID int, err error) {
+	deletedUserID, err = u.storage.DeleteUser(userID)
+
+	if err != nil {
+		return
+	} else if deletedUserID == 0 {
+		err = errors.New("user service - user with given id does not exist")
 		return
 	}
 

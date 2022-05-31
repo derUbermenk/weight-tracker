@@ -94,6 +94,16 @@ func (m mockUserRepo) GetUsers() (users []api.User, err error) {
 	return
 }
 
+func (m mockUserRepo) DeleteUser(userID int) (deletedUserID int, err error) {
+	_, present := m.users[userID]
+
+	if !present {
+		return 0, nil
+	}
+
+	return userID, nil
+}
+
 func TestCreateNewUser(t *testing.T) {
 
 	tests := []struct {
@@ -336,6 +346,47 @@ func TestUpdateUser(t *testing.T) {
 
 			if !reflect.DeepEqual(user, test.want_user) {
 				t.Errorf("test: %v failed. got: %v, wanted: %v", test.name, user, test.want_user)
+			}
+		})
+	}
+}
+
+func TestDeleteUser(t *testing.T) {
+
+	tests := []struct {
+		name       string
+		request    int
+		want_error error
+		want_id    int
+	}{
+		{
+			name:       "should delete user successfully since user exists",
+			request:    1,
+			want_error: nil,
+			want_id:    1,
+		},
+		{
+			name:       "should return an error when user with submitted id does not exist",
+			request:    25,
+			want_error: errors.New("user service - user with given id does not exist"),
+			want_id:    0,
+		},
+	}
+
+	for _, test := range tests {
+		test_users := copyUserMap(users)
+		mockRepo := mockUserRepo{users: test_users}
+		mockUserService := api.NewUserService(&mockRepo)
+
+		t.Run(test.name, func(t *testing.T) {
+			userID, err := mockUserService.Delete(test.request)
+
+			if !reflect.DeepEqual(err, test.want_error) {
+				t.Errorf("test: %v failed. got: %v, wanted: %v", test.name, err, test.want_error)
+			}
+
+			if !reflect.DeepEqual(userID, test.want_id) {
+				t.Errorf("test: %v failed. got: %v, wanted: %v", test.name, userID, test.want_id)
 			}
 		})
 	}
