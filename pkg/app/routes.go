@@ -12,11 +12,11 @@ func (s *Server) Routes() *gin.Engine {
 		// prefix the user routes
 		user := v1.Group("/user")
 		{
-			user.GET("/:userId", s.GetUser())
-			user.GET("", s.GetUsers())
-			user.POST("", s.CreateUser())
-			user.DELETE("/:userId", s.DeleteUser())
-			user.PUT("/:userId", s.UpdateUser())
+			user.GET("/:userId", s.GetUser())       // show
+			user.GET("", s.GetUsers())              // index
+			user.POST("", s.CreateUser())           // create
+			user.DELETE("/:userId", s.DeleteUser()) // delete
+			user.PUT("/:userId", s.UpdateUser())    // edit
 		}
 
 		// prefix the weight routes
