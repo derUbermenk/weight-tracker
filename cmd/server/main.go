@@ -59,6 +59,9 @@ func run() error {
 	// create weight service
 	weightService := api.NewWeightService(storage)
 
+	// create auth service
+	authService := api.NewAuthService(storage)
+
 	// everything stays the same, so add this below
 	// storage := repository.NewStorage(db)
 	// run migrations
@@ -72,7 +75,7 @@ func run() error {
 		return err
 	}
 
-	server := app.NewServer(router, userService, weightService)
+	server := app.NewServer(router, userService, weightService, authService)
 
 	// start the server
 	err = server.Run()
