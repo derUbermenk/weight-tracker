@@ -1,6 +1,7 @@
 package app
 
 import (
+	"log"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -69,17 +70,89 @@ func (s *Server) LogIn() gin.HandlerFunc {
 	}
 }
 
+func (s *Server) RefreshAccessToken() gin.HandlerFunc {
+	return func(c *gin.Context) {
+	}
+}
+
 func (s *Server) ValidateAccessToken() gin.HandlerFunc {
 	return func(c *gin.Context) {
+		// get token string header
+		// handle missing token
+		// check if tkn is valid
+		// if not
+		// return internal server error
+
+		// if not token valid
+		// handle invalid token
+		// otherwise move to next handler
+
+		token_string := c.GetHeader("AccessToken")
+
+		if token_string == "" {
+			log.Print("Missing token")
+			c.JSON(
+				http.StatusBadRequest,
+				&GenericResponse{Status: false, Message: "Missing token"},
+			)
+
+			c.Abort()
+			return
+		}
+
+		token_status, current_user, err := s.authService.ValidateAccessToken(token_string)
+
+		if err != nil {
+			log.Printf("Internal Server Error: %v", err)
+
+			c.JSON(
+				http.StatusInternalServerError,
+				&GenericResponse{Status: false, Message: "Server Error"},
+			)
+
+			c.Abort()
+			return
+		}
+
+		switch token_status {
+
+		case api.ExpiredAccessToken:
+			// do something
+			c.JSON(
+				http.StatusUnauthorized,
+				&GenericResponse{Status: false, Message: "Expired access token"},
+			)
+			c.Abort()
+			return
+
+		case api.TamperedAccessToken:
+			c.JSON(
+				http.StatusUnauthorized,
+				&GenericResponse{Status: false, Message: "Tampered access token"},
+			)
+			c.Abort()
+			return
+
+		case api.ValidAccessToken:
+			// do something
+			c.Set("current_user", current_user)
+			c.Next()
+		default:
+			// print invalid token
+			log.Printf("Unknown Token Status: %v", token_status)
+			c.JSON(
+				http.StatusInternalServerError,
+				&GenericResponse{Status: false, Message: "Internal server error"},
+			)
+			c.Abort()
+			return
+		}
 	}
 }
 
 func (s *Server) ValidateRefreshToken() gin.HandlerFunc {
 	return func(c *gin.Context) {
-	}
-}
+		// get refresh token
 
-func (s *Server) RefreshAccessToken() gin.HandlerFunc {
-	return func(c *gin.Context) {
 	}
 }
