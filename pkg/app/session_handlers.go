@@ -200,5 +200,37 @@ func (s *Server) ValidateRefreshToken() gin.HandlerFunc {
 
 func (s *Server) RefreshAccessToken() gin.HandlerFunc {
 	return func(c *gin.Context) {
+		// Get returns an interface
+		// .(Type) is type casting; casts the interface into the given type
+		creds, _ := c.Get("creds")
+		refresh_token, _ := c.Get("refresh_token")
+
+		creds = creds.(Credentials)
+		refresh_token = refresh_token.(string)
+
+		access_token, err := s.authService.GenerateAccessToken(creds)
+
+		if err != nil {
+			log.Printf("Internal server error: %v", err)
+
+			c.JSON(
+				http.StatusInternalServerError,
+				&GenericResponse{
+					Status:  false,
+					Message: "Internal server error",
+				},
+			)
+
+			return
+		}
+
+		c.JSON(
+			http.StatusOK,
+			&GenericResponse{
+				Status:  true,
+				Message: "Access token refreshed",
+				Data:    &AuthResponse{AccessToken: access_token, RefreshToken: refresh_token},
+			},
+		)
 	}
 }
