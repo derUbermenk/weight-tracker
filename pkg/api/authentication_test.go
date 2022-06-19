@@ -1,8 +1,11 @@
 package api_test
 
 import (
+	"fmt"
 	"testing"
 	"weight-tracker/pkg/api"
+
+	"golang.org/x/crypto/bcrypt"
 )
 
 type Credentials struct {
@@ -18,7 +21,7 @@ func (m *mockAuthRepo) GetUserByEmail(email string) (user api.User, err error) {
 	password, exists := m.users[email]
 
 	if !exists {
-		return
+		return api.User{}, nil
 	}
 
 	user.Email = email
@@ -27,8 +30,28 @@ func (m *mockAuthRepo) GetUserByEmail(email string) (user api.User, err error) {
 	return
 }
 
-var users = map[string]string{
-	"existing_email@email.com": "correct_password1234",
+func NewMockAuthRepo() (authRepo *mockAuthRepo) {
+	authRepo = &mockAuthRepo{
+		users: map[string]string{},
+	}
+
+	users_unstored := map[string]string{
+		"existing_email@email.com": "correct_password1234",
+	}
+
+	// hash the passwords
+	for email, password := range users_unstored {
+		hashed_pass, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.MinCost)
+
+		if err != nil {
+			fmt.Print("here")
+			panic(err)
+		}
+
+		authRepo.users[email] = string(hashed_pass)
+	}
+
+	return
 }
 
 func TestValidateCredentials(t *testing.T) {
@@ -60,17 +83,17 @@ func TestValidateCredentials(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		mockRepo := mockAuthRepo{users}
-		authService := api.NewAuthService(&mockRepo)
+		mockRepo := NewMockAuthRepo()
+		authService := api.NewAuthService(mockRepo)
 
 		t.Run(test.name, func(t *testing.T) {
-			validity, err := authService.ValidateCredentials(test.credentials)
+			validity, err := authService.ValidateCredentials(test.credentials.Email, test.credentials.Password)
 
 			if err != test.want_err {
 				t.Errorf("test %v failed. got: %v, wanted: %v", test.name, err, test.want_err)
 			}
 
-			if validity == test.want_validity {
+			if validity != test.want_validity {
 				t.Errorf("test %v failed. got: %v, wanted: %v", test.name, validity, test.want_validity)
 			}
 		})
