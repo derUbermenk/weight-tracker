@@ -1,6 +1,8 @@
 package app
 
-import "github.com/gin-gonic/gin"
+import (
+	"github.com/gin-gonic/gin"
+)
 
 func (s *Server) Routes() *gin.Engine {
 	router := s.router
@@ -9,20 +11,35 @@ func (s *Server) Routes() *gin.Engine {
 	v1 := router.Group("/v1/api")
 	{
 		v1.GET("/status", s.ApiStatus())
-		// prefix the user routes
-		user := v1.Group("/user")
+
+		registration := router.Group("registration/")
 		{
-			user.GET("/:userId", s.GetUser())       // show
-			user.GET("", s.GetUsers())              // index
-			user.POST("", s.CreateUser())           // create
-			user.DELETE("/:userId", s.DeleteUser()) // delete
-			user.PUT("/:userId", s.UpdateUser())    // edit
+			registration.POST("/signUp", s.RegisterUser())
 		}
 
-		// prefix the weight routes
-		weight := v1.Group("/weight")
+		session := router.Group("session/")
 		{
-			weight.POST("", s.CreateWeightEntry())
+			session.GET("/logIn", s.LogIn())
+			session.GET("/refreshToken", s.ValidateRefreshToken(), s.RefreshAccessToken())
+		}
+		// prefix the user routes
+
+		private := router.Group("private/")
+		private.Use(s.ValidateAccessToken())
+		{
+			user := private.Group("/user")
+			{
+				user.GET("/:userId", s.GetUser())       // show
+				user.GET("", s.GetUsers())              // index
+				user.POST("", s.CreateUser())           // create
+				user.DELETE("/:userId", s.DeleteUser()) // delete
+				user.PUT("/:userId", s.UpdateUser())    // update
+			}
+
+			weight := private.Group("/weight")
+			{
+				weight.POST("", s.CreateWeightEntry())
+			}
 		}
 	}
 
