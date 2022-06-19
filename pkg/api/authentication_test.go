@@ -14,6 +14,19 @@ type mockAuthRepo struct {
 	users map[string]string
 }
 
+func (m *mockAuthRepo) GetUserByEmail(email string) (user api.User, err error) {
+	password, exists := m.users[email]
+
+	if !exists {
+		return
+	}
+
+	user.Email = email
+	user.Password = password
+
+	return
+}
+
 var users = map[string]string{
 	"existing_email@email.com": "correct_password1234",
 }
