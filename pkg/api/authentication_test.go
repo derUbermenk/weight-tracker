@@ -98,5 +98,14 @@ func TestValidateCredentials(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestGenerateAccessToken(t *testing.T) {
+	// generates an access token giventhe credentials
+
+	// to complicated to test
+}
+
+func TestGenerateRefreshToken(t *testing.T) {
 
 }
