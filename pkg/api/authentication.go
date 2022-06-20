@@ -1,8 +1,18 @@
 package api
 
 import (
+	"time"
+
+	"github.com/golang-jwt/jwt/v4"
 	"golang.org/x/crypto/bcrypt"
 )
+
+type AccessTokenClaims struct {
+	TokenType string `json:"token_type"`
+	Email     string `json:"email"`
+
+	jwt.RegisteredClaims
+}
 
 // authentication interface. Defines the
 // 	functions and its signature that a type needs
@@ -15,6 +25,7 @@ import (
 // 	As well as Credential(password and email) validation.
 type AuthService interface {
 	ValidateCredentials(email, password string) (validity bool, err error)
+	GenerateAccessToken(email string, expiration int64) (signed_access_token string, err error)
 }
 
 // authentication repository interface represents any
@@ -54,6 +65,23 @@ func (a *authService) ValidateCredentials(email, password string) (validity bool
 	// compare user.password with password
 	// if not equal set validity == false
 	validity = a.authenticate(user.Password, password)
+
+	return
+}
+
+// generates an access token and adds the email and expiration to the claims(payload of the token).
+// expiration is an int which represents unix seconds since 1970, January 1.
+func (a *authService) GenerateAccessToken(email string, expiration int64) (signed_access_token string, err error) {
+	claims := &AccessTokenClaims{
+		TokenType: "access",
+		Email:     email,
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(time.Unix(expiration, 0)),
+		},
+	}
+
+	access_token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	signed_access_token, err = access_token.SignedString(a.signingKey_byte)
 
 	return
 }
