@@ -27,13 +27,15 @@ type AuthRepository interface {
 // a struct type representing the authentication
 // service interface
 type authService struct {
-	storage AuthRepository
+	storage         AuthRepository
+	signingKey_byte []byte
 }
 
 // creates a new authservice for use of the server
-func NewAuthService(authRepository AuthRepository) AuthService {
+func NewAuthService(authRepository AuthRepository, signingKey string) AuthService {
 	return &authService{
-		storage: authRepository,
+		storage:         authRepository,
+		signingKey_byte: []byte(signingKey),
 	}
 }
 
