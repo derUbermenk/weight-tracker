@@ -1,6 +1,7 @@
 package api
 
 import (
+	"errors"
 	"log"
 	"time"
 
@@ -25,6 +26,12 @@ type RefreshTokenClaims struct {
 	jwt.RegisteredClaims
 }
 
+var TokenStatus = map[string]int{
+	"valid":   0,
+	"invalid": 1,
+	"expired": 2,
+}
+
 // authentication interface. Defines the
 // 	functions and its signature that a type needs
 // 	to implement to be able to be considered
@@ -38,6 +45,7 @@ type AuthService interface {
 	ValidateCredentials(email, password string) (validity bool, err error)
 	GenerateAccessToken(email string, expiration int64) (signed_access_token string, err error)
 	GenerateRefreshToken(email string, customKey string) (signed_refresh_token string, err error)
+	ValidateAccessToken(access_token string) (status int)
 }
 
 // authentication repository interface represents any
@@ -118,6 +126,30 @@ func (a *authService) GenerateRefreshToken(email string, customKey string) (sign
 		return
 	}
 
+	return
+}
+
+func (a *authService) ValidateAccessToken(access_token string) (status int) {
+	claims := &AccessTokenClaims{}
+
+	_, err := jwt.ParseWithClaims(access_token, claims, func(token *jwt.Token) (interface{}, error) { return a.signingKey_byte, nil })
+
+	if err != nil {
+		log.Printf("Service Error: %v", err)
+
+		// err could also be caused when the jwt token is expired
+		// but compare the error with jwt.ErrTokenExpired does not work
+		// to augment this, I resolved to check the error value instead
+		if errors.Is(err, jwt.ErrTokenExpired) {
+			status = TokenStatus["expired"]
+		} else {
+			status = TokenStatus["tampered"]
+		}
+
+		return
+	}
+
+	status = TokenStatus["valid"]
 	return
 }
 
