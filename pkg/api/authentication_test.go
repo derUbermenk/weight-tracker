@@ -151,14 +151,56 @@ func TestGenerateAccessToken(t *testing.T) {
 }
 
 func TestGenerateRefreshToken(t *testing.T) {
-	// generate a refresh token given the credentials
+	// generates a refresh token given an email and a custom key
+	tests := []struct {
+		name               string
+		email              string
+		customKey          string
+		want_refresh_token string
+		want_err           error
+	}{
+		{
+			name:               "Should return the correct refresh token given the parameters",
+			email:              "existing_email@email.com",
+			customKey:          "hashed_email_and_pass",
+			want_refresh_token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoicmVmcmVzaCIsImVtYWlsIjoiZXhpc3RpbmdfZW1haWxAZW1haWwuY29tIiwiY3VzdG9tX2tleSI6Imhhc2hlZF9lbWFpbF9hbmRfaGFzaGVkX3Bhc3MifQ.q0WPazaOaGnnfTrsjAfApXEafYWdpNWwUHMMCQP7FB4",
+			want_err:           nil,
+		},
+		{
+			name:               "Should return the correct refresh token given the correct params",
+			email:              "newEmail@email.io",
+			customKey:          "hashed_userEmail_and_pass",
+			want_refresh_token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoicmVmcmVzaCIsImVtYWlsIjoibmV3RW1haWxAZW1haWwuaW8iLCJjdXN0b21fa2V5IjoiaGFzaGVkX3VzZXJFbWFpbF9hbmRfcGFzcyJ9.CfwwZ-gq7rTti3OuWiPLUBAwmShhEK6K7p4bxo_zgsc",
+			want_err:           nil,
+		},
+	}
 
-	// probably mock how access tokens are generated
-	// just expect it to not return nil
-	// on credential entry
+	for _, test := range tests {
+		mockRepo := NewMockAuthRepo()
+		authService := api.NewAuthService(mockRepo, signingKey)
+
+		t.Run(test.name, func(t *testing.T) {
+			refresh_token, err := authService.GenerateRefreshToken(test.email, test.customKey)
+
+			if err != test.want_err {
+				t.Errorf("test %v failed.\n\tgot %v\n\twanted: %v", test.name, err, test.want_err)
+			}
+
+			if refresh_token != test.want_refresh_token {
+				t.Errorf("test %v failed.\n\tgot %v,\n\twanted: %v", test.name, refresh_token, test.want_refresh_token)
+			}
+		})
+	}
+
 }
 
 func TestValidateAccessToken(t *testing.T) {
+	// validate access token
+
+	//
+}
+
+func TestValidateRefreshToken(t *testing.T) {
 	// validate access token
 
 	//
