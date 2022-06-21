@@ -1,6 +1,7 @@
 package api
 
 import (
+	"log"
 	"time"
 
 	"github.com/golang-jwt/jwt/v4"
@@ -11,6 +12,16 @@ type AccessTokenClaims struct {
 	TokenType string `json:"token_type"`
 	Email     string `json:"email"`
 
+	jwt.RegisteredClaims
+}
+
+type RefreshTokenClaims struct {
+	TokenType string `json:"token_type"`
+	Email     string `json:"email"`
+	CustomKey string `json:"custom_key"`
+
+	// this field is required for it to be considered a RefreshTokenClaims
+	// also allows us additional fields
 	jwt.RegisteredClaims
 }
 
@@ -26,6 +37,7 @@ type AccessTokenClaims struct {
 type AuthService interface {
 	ValidateCredentials(email, password string) (validity bool, err error)
 	GenerateAccessToken(email string, expiration int64) (signed_access_token string, err error)
+	GenerateRefreshToken(email string, customKey string) (signed_refresh_token string, err error)
 }
 
 // authentication repository interface represents any
@@ -82,6 +94,29 @@ func (a *authService) GenerateAccessToken(email string, expiration int64) (signe
 
 	access_token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	signed_access_token, err = access_token.SignedString(a.signingKey_byte)
+
+	if err != nil {
+		log.Printf("Service Error: %v", err)
+		return
+	}
+
+	return
+}
+
+func (a *authService) GenerateRefreshToken(email string, customKey string) (signed_refresh_token string, err error) {
+	claims := &RefreshTokenClaims{
+		TokenType: "refresh",
+		Email:     email,
+		CustomKey: customKey,
+	}
+
+	refresh_token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	signed_refresh_token, err = refresh_token.SignedString(a.signingKey_byte)
+
+	if err != nil {
+		log.Printf("Service Error: %v", err)
+		return
+	}
 
 	return
 }
