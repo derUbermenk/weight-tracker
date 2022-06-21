@@ -162,7 +162,7 @@ func TestGenerateRefreshToken(t *testing.T) {
 		{
 			name:               "Should return the correct refresh token given the parameters",
 			email:              "existing_email@email.com",
-			customKey:          "hashed_email_and_pass",
+			customKey:          "hashed_email_and_hashed_pass",
 			want_refresh_token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoicmVmcmVzaCIsImVtYWlsIjoiZXhpc3RpbmdfZW1haWxAZW1haWwuY29tIiwiY3VzdG9tX2tleSI6Imhhc2hlZF9lbWFpbF9hbmRfaGFzaGVkX3Bhc3MifQ.q0WPazaOaGnnfTrsjAfApXEafYWdpNWwUHMMCQP7FB4",
 			want_err:           nil,
 		},
@@ -196,8 +196,82 @@ func TestGenerateRefreshToken(t *testing.T) {
 
 func TestValidateAccessToken(t *testing.T) {
 	// validate access token
+	// the service setup code was placed here because one of the tokens require the service
+	// to generate valid access tokens
+	mockRepo := mockAuthRepo{}
+	authService := api.NewAuthService(&mockRepo, signingKey)
 
-	//
+	// created by generating expired tokens in jwt.io. This still used the signing key used in the test.
+	expired_tokens := [3]string{
+		"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZW1haWwiOiJleGlzdGluZ19lbWFpbEBlbWFpbC5jb20iLCJleHAiOjE2NTU2NTgwfQ.I_bv7NhYuRZSSuIjlFHlA6fRqBuXXblY1a28AVYXEZ0",
+		"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZW1haWwiOiJuZXdfZW1haWxAZW1haWwuY29tIiwiZXhwIjoyOTk5ODkxfQ.KEq20X7eUBidx7avrFce4Jum36gy4j6johqsh37ggzc",
+		"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZW1haWwiOiJhbm90aGVyX2VtYWlsQGVtYWlsLmNvbSIsImV4cCI6Mjk4OTExMjMxfQ.o9pC7sH4wwBLaOgq4q8p4z69Yaq_PxI6ki5MwDyfAYQ",
+	}
+
+	// created by generating a valid token using jwt.io, sharing the token, then changing the payload.
+	// this simulates using the token to login as another user.
+	tampered_tokens := [3]string{
+		"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZW1haWwiOiJteV9lbWFpbEBlbWFpbC5jb20iLCJleHAiOjI5ODI5MTEyMzF9.FS47rXB1qvb81wg0h4EIu8MSvQefI0-LHyr3vz0NwC4",
+		"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZW1haWwiOiJ0YW1wZXJlZF9lbWFpbEBlbWFpbC5jb20iLCJleHAiOjI5ODI5MTEyMzF9.Zf6wzs_pZxJpOOicMOEgRSDMfNEvPrtOuqllHIVO9ZA",
+		"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZW1haWwiOiIxMXRhbXBlcmVkX2VtYWlsQGVtYWlsLmNvbSIsImV4cCI6Mjk4MjkxMTIzMX0.USV6CNMJy73vlahpj79Bh-Hy3jLfjrfo5e_o_8jlSF8",
+	}
+
+	// created by using the GenerateAccessToken method of the auth api. This is also a good test to check wether
+	// the generated access tokens are indeed valid
+	var valid_tokens [3]string
+	emails := [3]string{"newEmail@io.com", "newWark@email.com", "noTraffic@email.com"}
+	expirations := [3]int64{2982911231, 3982511231, 3782511231}
+
+	for i := 0; i <= 2; i++ {
+		access_token, _ := authService.GenerateAccessToken(emails[i], expirations[i])
+		valid_tokens[i] = access_token
+	}
+
+	// define the tests
+
+	tests := []struct {
+		name          string
+		access_tokens [3]string
+		want_status   int
+		want_err      error
+	}{
+		{
+			name:          "Must all have expired status",
+			access_tokens: expired_tokens,
+			want_status:   api.TokenStatus["expired"],
+			// want_err:      nil,
+		},
+		{
+			name:          "Must all have tampered status",
+			access_tokens: tampered_tokens,
+			want_status:   api.TokenStatus["tampered"],
+			// want_err:      nil,
+		},
+		{
+			name:          "Must all have valid status",
+			access_tokens: valid_tokens,
+			want_status:   api.TokenStatus["valid"],
+			// want_err:      nil,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			for index, token := range test.access_tokens {
+				status := authService.ValidateAccessToken(token)
+
+				/*
+					if err != test.want_err {
+						t.Errorf("test %v failed.\n\tgot %v,\t\nwanted: %v\n\tOn token: %v", test.name, err, test.want_err, index)
+					}
+				*/
+
+				if status != test.want_status {
+					t.Errorf("test %v failed.\n\tgot %v,\t\nwanted: %v\n\tOn token: %v", test.name, status, test.want_status, index)
+				}
+			}
+		})
+	}
 }
 
 func TestValidateRefreshToken(t *testing.T) {
