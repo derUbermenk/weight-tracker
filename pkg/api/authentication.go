@@ -46,6 +46,7 @@ type AuthService interface {
 	GenerateAccessToken(email string, expiration int64) (signed_access_token string, err error)
 	GenerateRefreshToken(email string, customKey string) (signed_refresh_token string, err error)
 	ValidateAccessToken(access_token string) (status int)
+	ValidateRefreshToken(refresh_token, custom_key string) (validity bool)
 }
 
 // authentication repository interface represents any
@@ -131,8 +132,11 @@ func (a *authService) GenerateRefreshToken(email string, customKey string) (sign
 
 func (a *authService) ValidateAccessToken(access_token string) (status int) {
 	claims := &AccessTokenClaims{}
+	keyFunc := func(token *jwt.Token) (interface{}, error) {
+		return a.signingKey_byte, nil
+	}
 
-	_, err := jwt.ParseWithClaims(access_token, claims, func(token *jwt.Token) (interface{}, error) { return a.signingKey_byte, nil })
+	_, err := jwt.ParseWithClaims(access_token, claims, keyFunc)
 
 	if err != nil {
 		log.Printf("Service Error: %v", err)
@@ -150,6 +154,29 @@ func (a *authService) ValidateAccessToken(access_token string) (status int) {
 	}
 
 	status = TokenStatus["valid"]
+	return
+}
+
+func (a *authService) ValidateRefreshToken(refresh_token, customKey string) (validity bool) {
+	claims := &RefreshTokenClaims{}
+	keyFunc := func(token *jwt.Token) (interface{}, error) {
+		return a.signingKey_byte, nil
+	}
+
+	tkn, err := jwt.ParseWithClaims(refresh_token, claims, keyFunc)
+
+	if err != nil {
+		log.Printf("service error: %v", err)
+		return
+	} else if !tkn.Valid {
+		return
+	}
+
+	if claims.CustomKey != customKey {
+		return
+	}
+
+	validity = true
 	return
 }
 
