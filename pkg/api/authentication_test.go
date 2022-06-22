@@ -260,6 +260,7 @@ func TestValidateAccessToken(t *testing.T) {
 			for index, token := range test.access_tokens {
 				status := authService.ValidateAccessToken(token)
 
+				// remove error returns for now
 				/*
 					if err != test.want_err {
 						t.Errorf("test %v failed.\n\tgot %v,\t\nwanted: %v\n\tOn token: %v", test.name, err, test.want_err, index)
@@ -275,7 +276,116 @@ func TestValidateAccessToken(t *testing.T) {
 }
 
 func TestValidateRefreshToken(t *testing.T) {
-	// validate access token
 
+	// the custom key is the combination of the users email and hashed password
+	// we do not generate this in this case, and only use a random string
+	// what's important for refresh token validity is that the custom key is the same
+	// as that in the payload.
+	var correct_custom_key string
+	var incorrect_custom_key string
+
+	// the following variables each represent a set of tokens with a given condition
 	//
+	// valid_tokens: the tokens where generated using the signing key and the custom key used is unchanged
+	// wrongly_signed_tokens: the token was not generated using the signing key
+	// tampered_tokens: the signed_tokens strings have been changed.
+	var valid_tokens [3]string
+	var wrongly_signed_tokens [3]string
+	var tampered_tokens [3]string
+
+	correct_custom_key = "correct_custom_key"
+	incorrect_custom_key = "incorrect_custom_key"
+
+	// all these tokens used the same custom key but with different emails. The signing key used is the singning_key global variable available in this test.
+	// follow the links to see the decoded version
+	valid_tokens = [3]string{
+		// https://jwt.io/#debugger-io?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoicmVmcmVzaCIsImVtYWlsIjoiZXhpc3RpbmdfZW1haWxAZW1haWwuY29tIiwiY3VzdG9tX2tleSI6ImNvcnJlY3RfY3VzdG9tX2tleSJ9.ThLgaHwynarnJYSrLT360Ki3JMrD9Jgb_DL1C9NN3HM
+		"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoicmVmcmVzaCIsImVtYWlsIjoiZXhpc3RpbmdfZW1haWxAZW1haWwuY29tIiwiY3VzdG9tX2tleSI6ImNvcnJlY3RfY3VzdG9tX2tleSJ9.ThLgaHwynarnJYSrLT360Ki3JMrD9Jgb_DL1C9NN3HM",
+
+		// https://jwt.io/#debugger-io?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoicmVmcmVzaCIsImVtYWlsIjoibmV3RW1haWxAZW1haWwuY29tIiwiY3VzdG9tX2tleSI6ImNvcnJlY3RfY3VzdG9tX2tleSJ9.GEj4aXmKc1JLDKE1xIBsZoYyH7PggEavnEzDsFzVn5s
+		"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoicmVmcmVzaCIsImVtYWlsIjoibmV3RW1haWxAZW1haWwuY29tIiwiY3VzdG9tX2tleSI6ImNvcnJlY3RfY3VzdG9tX2tleSJ9.GEj4aXmKc1JLDKE1xIBsZoYyH7PggEavnEzDsFzVn5s",
+
+		// https://jwt.io/#debugger-io?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoicmVmcmVzaCIsImVtYWlsIjoibmV3MkVtYWlsQGVtYWlsLmNvbSIsImN1c3RvbV9rZXkiOiJjb3JyZWN0X2N1c3RvbV9rZXkifQ.DSoTvVEaPEU1Mrz2O2gGp7MTShkMU5I2KIhoNme2BIY
+		"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoicmVmcmVzaCIsImVtYWlsIjoibmV3MkVtYWlsQGVtYWlsLmNvbSIsImN1c3RvbV9rZXkiOiJjb3JyZWN0X2N1c3RvbV9rZXkifQ.DSoTvVEaPEU1Mrz2O2gGp7MTShkMU5I2KIhoNme2BIY",
+	}
+
+	// these tokens are generated using the jwt.io websites decode and encode function with different signing keys
+	wrongly_signed_tokens = [3]string{
+		// https://jwt.io/#debugger-io?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoicmVmcmVzaCIsImVtYWlsIjoibmV3MkVtYWlsQGVtYWlsLmNvbSIsImN1c3RvbV9rZXkiOiJjb3JyZWN0X2N1c3RvbV9rZXkifQ.0EWQpapPJFhwb47JooN2d7NpueXhQ8ZMyvsbrOnpCFQ
+		"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoicmVmcmVzaCIsImVtYWlsIjoibmV3MkVtYWlsQGVtYWlsLmNvbSIsImN1c3RvbV9rZXkiOiJjb3JyZWN0X2N1c3RvbV9rZXkifQ.0EWQpapPJFhwb47JooN2d7NpueXhQ8ZMyvsbrOnpCFQ",
+
+		// https://jwt.io/#debugger-io?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoicmVmcmVzaCIsImVtYWlsIjoiZXhpc3RpbmdFbWFpbEBlbWFpbC5jb20iLCJjdXN0b21fa2V5IjoiY29ycmVjdF9jdXN0b21fa2V5In0.hd5Rym36TeMYrkJJZb4KvsN2NM3jVTkdQ04mP-LpunA
+		"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoicmVmcmVzaCIsImVtYWlsIjoiZXhpc3RpbmdFbWFpbEBlbWFpbC5jb20iLCJjdXN0b21fa2V5IjoiY29ycmVjdF9jdXN0b21fa2V5In0.hd5Rym36TeMYrkJJZb4KvsN2NM3jVTkdQ04mP-LpunA",
+
+		// https://jwt.io/#debugger-io?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoicmVmcmVzaCIsImVtYWlsIjoiZXhpc3RpbmdFbWFpbEBlbWFpbC5jb20iLCJjdXN0b21fa2V5IjoiY29ycmVjdF9jdXN0b21fa2V5In0.tgGXUh6302JdUFCYB4gp_yBSbHYghag6TzIS_XoSWk8
+		"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoicmVmcmVzaCIsImVtYWlsIjoiZXhpc3RpbmdFbWFpbEBlbWFpbC5jb20iLCJjdXN0b21fa2V5IjoiY29ycmVjdF9jdXN0b21fa2V5In0.tgGXUh6302JdUFCYB4gp_yBSbHYghag6TzIS_XoSWk8",
+	}
+
+	// this tokens are from the valid tokens but with with randomly additional or removed characters.
+	tampered_tokens = [3]string{
+		"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9_.eyJ0b2tlbl90eXBlIjoicmVmcmVzaCIsImVtYWlsIjoiZXhpc3RpbmdfZW1haWxAZW1haWwuY29tIiwiY3VzdG9tX2tleSI6ImNvcnJlY3RfY3VzdG9tX2tleSJ9.ThLgaHwynarnJYSrLT360Ki3JMrD9Jgb_DL1C9NN3HM",
+		"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eXJ0b2tlbl90eXBlIjoicmVmcmVzaCIsImVtYWlsIjoibmV3RW1haWxAZW1haWwuY29tIiwiY3VzdG9tX2tleSI6ImNvcnJlY3RfY3VzdG9tX2tleSJ9.GEj4aXmKc1JLDKE1xIBsZoYyH7PggEavnEzDsFzVn5s",
+		"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eXJ0b2tlbl90eXBlIjoicmVmcmVzaCIsImVtYWlsIjoibmV3RW1haWxAZW1haWwuY29tIiwiY3VzdG9tX2tleSI6ImNvcnJlY3RfY3VzdG9tX2tleSJ9.GEj4aXmKc1JLDKE1xIBsZoYyH7PggEavnEzDsFzVn5!s",
+	}
+
+	tests := []struct {
+		name          string
+		custom_key    string
+		tokens        [3]string
+		want_validity bool
+		want_err      error
+	}{
+		{
+			name:          "Must be valid for valid tokens with the same custom keys",
+			custom_key:    correct_custom_key,
+			tokens:        valid_tokens,
+			want_validity: true,
+			want_err:      nil,
+		},
+		{
+			name:          "Must be invalid for valid tokens with different custom keys",
+			custom_key:    incorrect_custom_key,
+			tokens:        valid_tokens,
+			want_validity: false,
+			want_err:      nil,
+		},
+		{
+			name:          "Must be invalid for wrongly signed tokens",
+			custom_key:    correct_custom_key,
+			tokens:        wrongly_signed_tokens,
+			want_validity: false,
+			want_err:      nil,
+		},
+		{
+			name:          "Must be invalid for tampered tokens",
+			custom_key:    correct_custom_key,
+			tokens:        tampered_tokens,
+			want_validity: false,
+			want_err:      nil,
+		},
+	}
+
+	// setup outside of the loop to save us a few steps
+	// only add this inside when we are dealing with database manipulation
+	// methods
+	mockRepo := mockAuthRepo{}
+	authService := api.NewAuthService(&mockRepo, signingKey)
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			for index, token := range test.tokens {
+				// check the validity and error
+				validity := authService.ValidateRefreshToken(token, test.custom_key)
+
+				/*
+					if err != test.want_err {
+						t.Errorf("test %v failed.\n\tgot %v,\t\nwanted: %v\n\tOn token: %v", test.name, err, test.want_err, index)
+					}
+				*/
+
+				if validity != test.want_validity {
+					t.Errorf("test %v failed.\n\tgot %v,\t\nwanted: %v\n\tOn token: %v", test.name, validity, test.want_validity, index)
+				}
+			}
+		})
+	}
 }
