@@ -25,6 +25,7 @@ type UpdateUserRequest struct {
 
 type User struct {
 	ID            int       `json:"id"`
+	Password      string    `json:"password"`
 	CreatedAt     time.Time `json:"created_at"`
 	UpdatedAt     time.Time `json:"updated_at"`
 	Name          string    `json:"name"`
