@@ -39,7 +39,7 @@ func TestCreateUser(t *testing.T) {
 	}
 
 	userRepo := mockUserRepo{}
-	userService := api.NewUserService(userRepo)
+	userService := api.NewUserService(&userRepo)
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			user, err := userService.CreateUser(test.email, test.hashedPassword)
@@ -79,7 +79,7 @@ func TestHashPassword(t *testing.T) {
 	}
 
 	userRepo := mockUserRepo{}
-	userService := api.NewUserService(userRepo)
+	userService := api.NewUserService(&userRepo)
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			// pattern represents letters numbers and symbols.
@@ -114,4 +114,38 @@ func TestHashPassword(t *testing.T) {
 func TestUserExists(t *testing.T) {
 	// checks if the function indeed returns a boolean
 	// that validates the User's existence in storage
+	tests := []struct {
+		name           string
+		userEmail      string
+		want_existence bool
+		want_error     error
+	}{
+		{
+			name:           "should return true when user exists",
+			userEmail:      "existing_user@email.com",
+			want_existence: true,
+			want_error:     nil,
+		},
+		{
+			name:           "should return false when user does not exist",
+			userEmail:      "non_existent_user@email.com",
+			want_existence: false,
+			want_error:     nil,
+		},
+	}
+
+	userRepo := mockUserRepo{}
+	userService := api.NewUserService(&userRepo)
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			existence, err := userService.UserExists(test.userEmail)
+			if err != test.want_error {
+				t.Errorf("test: %v failed.\n\tgot: %v\n\twanted: %v", test.name, err, test.want_error)
+			}
+
+			if existence != test.want_existence {
+				t.Errorf("test: %v failed.\n\tgot: %v\n\twanted: %v", test.name, existence, test.want_existence)
+			}
+		})
+	}
 }
