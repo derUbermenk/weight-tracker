@@ -40,6 +40,13 @@ func (m mockUserRepo) CreateUser(request api.NewUserRequest) (userID int, err er
 	return userID, nil
 }
 
+func (m mockUserRepo) CreateUser_v2(email, hashedPassword string) (user api.User, err error) {
+	user.Email = email
+	user.HashedPassword = hashedPassword
+
+	return
+}
+
 func (m mockUserRepo) GetUser(userID int) (api.User, error) {
 	return m.users[userID], nil
 }
@@ -104,83 +111,45 @@ func (m mockUserRepo) DeleteUser(userID int) (deletedUserID int, err error) {
 	return userID, nil
 }
 
-func TestCreateNewUser(t *testing.T) {
+func TestCreateUser(t *testing.T) {
+	// the CreateUser method handles the actual call to the database to save the user
+	// on a successful creation it will not return an error otherwise, it will.
 
+	// otherwise it returns an empty interface and an error
+
+	// we do not expect any errors from the service itself, but it can return one assuming
+	// the storage interface it uses encounters one.
+	// for the tests however, it is
+
+	// test 1
 	tests := []struct {
-		name     string
-		request  api.NewUserRequest
-		want_err error
-		want_id  int
+		name           string
+		email          string
+		hashedPassword string
+		want_user      api.User
+		want_error     error
 	}{
 		{
-			name: "should create a new user successfully",
-			request: api.NewUserRequest{
-				Name:          "test user",
-				WeightGoal:    "maintain",
-				Age:           20,
-				Height:        180,
-				Sex:           "female",
-				ActivityLevel: 5,
-				Email:         "test_user@gmail.com",
-			},
-			want_err: nil,
-			want_id:  0,
-		}, {
-			name: "should return an error because of missing email",
-			request: api.NewUserRequest{
-				Name:          "test user",
-				Age:           20,
-				WeightGoal:    "maintain",
-				Height:        180,
-				Sex:           "female",
-				ActivityLevel: 5,
-				Email:         "",
-			},
-			want_err: errors.New("user service - email required"),
-			want_id:  0,
-		}, {
-			name: "should return an error because of missing name",
-			request: api.NewUserRequest{
-				Name:          "",
-				Age:           20,
-				WeightGoal:    "maintain",
-				Height:        180,
-				Sex:           "female",
-				ActivityLevel: 5,
-				Email:         "test_user@gmail.com",
-			},
-			want_err: errors.New("user service - name required"),
-			want_id:  0,
-		}, {
-			name: "should return error because user with email already exists",
-			request: api.NewUserRequest{
-				Name:          "test user with email exists",
-				Age:           20,
-				Height:        180,
-				WeightGoal:    "maintain",
-				Sex:           "female",
-				ActivityLevel: 5,
-				Email:         "taken_email@email.com",
-			},
-			want_err: errors.New("user service - user with email already exists"),
-			want_id:  0,
+			name:           "It creates and returns the user created",
+			email:          "newEmail@email.com",
+			hashedPassword: "xHaaPass",
+			want_user:      api.User{Email: "newEmail@email.com", HashedPassword: "xHaaPass"},
+			want_error:     nil,
 		},
 	}
 
+	mockRepo := mockUserRepo{}
+	userService := api.NewUserService(&mockRepo)
 	for _, test := range tests {
-		test_users := copyUserMap(users)
-		mockRepo := mockUserRepo{users: test_users}
-		mockUserService := api.NewUserService(&mockRepo)
-
 		t.Run(test.name, func(t *testing.T) {
-			userID, err := mockUserService.New(test.request)
+			user, err := userService.CreateUser(test.email, test.hashedPassword)
 
-			if !reflect.DeepEqual(err, test.want_err) {
-				t.Errorf("test: %v failed. got: %v, wanted: %v", test.name, err, test.want_err)
+			if err != test.want_error {
+				t.Errorf("test: %v failed.\n\tgot: %v\n\twanted: %v", test.name, err, test.want_error)
 			}
 
-			if userID != test.want_id {
-				t.Errorf("test: %v failed. got: %v, wanted: %v", test.name, err, test.want_err)
+			if user != test.want_user {
+				t.Errorf("test %v failed.\n\t got: %+v\n\twanted: %+v", test.name, user, test.want_user)
 			}
 		})
 	}
