@@ -3,7 +3,10 @@ package api
 import (
 	"errors"
 	"fmt"
+	"log"
 	"strings"
+
+	"golang.org/x/crypto/bcrypt"
 )
 
 // UserService contains the methods of the user service
@@ -13,6 +16,9 @@ type UserService interface {
 	Update(user UpdateUserRequest) (User, error)
 	GetUser(id int) (user User, err error)
 	All() (users []User, err error)
+
+	CreateUser(email, hashedPassword string) (user User, err error)
+	HashPassword(password string) (hashedPass string, err error)
 }
 
 // UserRepository is what lets our service do db operations without knowing anything about the implementation
@@ -23,6 +29,8 @@ type UserRepository interface {
 	GetUser(userID int) (User, error)
 	GetUserByEmail(userEmail string) (user User, err error)
 	GetUsers() ([]User, error)
+
+	CreateUser_v2(email, hashedPassword string) (User, error)
 }
 
 type userService struct {
@@ -33,6 +41,17 @@ func NewUserService(userRepo UserRepository) UserService {
 	return &userService{
 		storage: userRepo,
 	}
+}
+
+func (u *userService) CreateUser(email, hashedPassword string) (user User, err error) {
+	user, err = u.storage.CreateUser_v2(email, hashedPassword)
+
+	if err != nil {
+		log.Printf("Service error: %v", err)
+		return
+	}
+
+	return
 }
 
 func (u *userService) Update(user UpdateUserRequest) (updatedUser User, err error) {
@@ -132,6 +151,19 @@ func (u *userService) Delete(userID int) (deletedUserID int, err error) {
 		return
 	}
 
+	return
+}
+
+func (u *userService) HashPassword(password string) (hashedPass string, err error) {
+	var hashedPass_byte []byte
+	hashedPass_byte, err = bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+
+	if err != nil {
+		log.Printf("Service error: %v")
+		return
+	}
+
+	hashedPass = string(hashedPass_byte)
 	return
 }
 
