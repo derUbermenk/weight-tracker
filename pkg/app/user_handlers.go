@@ -45,57 +45,6 @@ func (s *Server) GetUsers() gin.HandlerFunc {
 	}
 }
 
-func (s *Server) RegisterUser() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		var response *GenericResponse
-		var credentials *Credentials
-
-		err := c.ShouldBindJSON(credentials)
-
-		if err != nil {
-			response.Status = false
-			response.Message = "Handler Error"
-
-			log.Printf("handler error: %v, err")
-			c.JSON(http.StatusBadRequest, response)
-		}
-
-		// start checking
-		if valid := s.userService.ValidatePassword(credentials.Password); !valid {
-			response.Status = false
-			response.Message = "Weak Password"
-
-			c.JSON(http.StatusOK, response)
-			c.Abort()
-			return
-		}
-
-		if exists := s.userService.UserExists(credentials.Email); exists {
-			response.Status = false
-			response.Message = "User Exists"
-
-			c.JSON(http.StatusOK, response)
-			c.Abort()
-			return
-		}
-
-		hashedPassword := s.userService.HashPassword(credentials.Password)
-		user, err = s.userService.CreateUser(credentials.Email, hashedPassword)
-
-		if err != nil {
-			response.Status = false
-			response.Message = "User creation failed"
-
-			c.JSON(http.StatusOK, response)
-			c.Abort()
-			return
-		}
-
-		c.Set("credentials", credentials)
-		c.Next()
-	}
-}
-
 func (s *Server) CreateUser() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		c.Header("Content-Type", "application/json")
