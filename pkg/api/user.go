@@ -19,6 +19,7 @@ type UserService interface {
 
 	CreateUser(email, hashedPassword string) (user User, err error)
 	HashPassword(password string) (hashedPass string, err error)
+	UserExists(email string) (exists bool, err error)
 }
 
 // UserRepository is what lets our service do db operations without knowing anything about the implementation
@@ -68,7 +69,6 @@ func (u *userService) Update(user UpdateUserRequest) (updatedUser User, err erro
 		return
 	} else if changed && exists {
 		err = errors.New("user service - user with email already exists")
-		fmt.Printf("user.go:46 - email \n  exists: %v \n  email: %v \n  error: %v \n\n", exists, user.Email, err)
 		return
 	}
 
@@ -164,6 +164,22 @@ func (u *userService) HashPassword(password string) (hashedPass string, err erro
 	}
 
 	hashedPass = string(hashedPass_byte)
+	return
+}
+
+func (u *userService) UserExists(email string) (exists bool, err error) {
+	var user User
+	user, err = u.storage.GetUserByEmail(email)
+
+	if err != nil {
+		log.Printf("Service Error: %v", err)
+		return
+	}
+
+	fmt.Printf("exists: %v\n", user != User{})
+	fmt.Printf("%v \n*************\n", user)
+
+	exists = user != User{}
 	return
 }
 

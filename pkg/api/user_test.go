@@ -2,6 +2,7 @@ package api_test
 
 import (
 	"errors"
+	"fmt"
 	"reflect"
 	"regexp"
 	"testing"
@@ -57,6 +58,7 @@ func (m mockUserRepo) GetUserByEmail(userEmail string) (api.User, error) {
 	// check email, and return email if theirs
 	for _, user := range m.users {
 		if user.Email == userEmail {
+			fmt.Printf("is user: %v \n\tgiven: %v\n\tcurrent: %v\n", userEmail == user.Email, userEmail, user.Email)
 			return user, nil
 		}
 	}
@@ -208,6 +210,45 @@ func TestHashPassword(t *testing.T) {
 				t.Errorf("test: %v failed.\n\tgot: %v\n\twanted: %v", test.name, has_letters_numbers_and_symbols, test.want_has_letters_numbers_and_symbols)
 			}
 
+		})
+	}
+}
+
+func TestUserExists(t *testing.T) {
+	// checks if the function indeed returns a boolean
+	// that validates the User's existence in storage
+	tests := []struct {
+		name           string
+		userEmail      string
+		want_existence bool
+		want_error     error
+	}{
+		{
+			name:           "should return true when user exists",
+			userEmail:      "taken_email@email.com",
+			want_existence: true,
+			want_error:     nil,
+		},
+		{
+			name:           "should return false when user does not exist",
+			userEmail:      "non_existent_user@email.com",
+			want_existence: false,
+			want_error:     nil,
+		},
+	}
+
+	userRepo := mockUserRepo{users: users}
+	userService := api.NewUserService(&userRepo)
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			existence, err := userService.UserExists(test.userEmail)
+			if err != test.want_error {
+				t.Errorf("test: %v failed.\n\tgot: %v\n\twanted: %v", test.name, err, test.want_error)
+			}
+
+			if existence != test.want_existence {
+				t.Errorf("test: %v failed.\n\tgot: %v\n\twanted: %v", test.name, existence, test.want_existence)
+			}
 		})
 	}
 }
