@@ -20,6 +20,7 @@ type UserService interface {
 	CreateUser(email, hashedPassword string) (user User, err error)
 	HashPassword(password string) (hashedPass string, err error)
 	UserExists(email string) (exists bool, err error)
+	ValidatePassword(password string) (validity bool)
 }
 
 // UserRepository is what lets our service do db operations without knowing anything about the implementation
@@ -180,6 +181,15 @@ func (u *userService) UserExists(email string) (exists bool, err error) {
 	fmt.Printf("%v \n*************\n", user)
 
 	exists = user != User{}
+	return
+}
+
+func (u *userService) ValidatePassword(password string) (validity bool) {
+	if len(password) >= 6 {
+		validity = true
+		return
+	}
+
 	return
 }
 

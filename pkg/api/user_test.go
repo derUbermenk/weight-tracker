@@ -253,6 +253,38 @@ func TestUserExists(t *testing.T) {
 	}
 }
 
+func TestValidatePassword(t *testing.T) {
+	// check if the given password does not pass website bare minimums
+	tests := []struct {
+		name       string
+		password   string
+		want_valid bool
+		want_error error
+	}{
+		{
+			name:       "Should return false for a password less than 6 characters in len",
+			password:   "lofi1",
+			want_valid: false,
+		},
+		{
+			name:       "Should return true for a password more than 6 characters",
+			password:   "asdf234",
+			want_valid: true,
+		},
+	}
+
+	userService := api.NewUserService(nil)
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			valid := userService.ValidatePassword(test.password)
+
+			if valid != test.want_valid {
+				t.Errorf("test: %v failed.\n\tgot: %v\n\twanted: %v", test.name, valid, test.want_valid)
+			}
+		})
+	}
+}
+
 func TestGetAllUser(t *testing.T) {
 	tests := []struct {
 		name       string
