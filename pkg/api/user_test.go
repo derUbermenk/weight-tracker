@@ -2,7 +2,9 @@ package api_test
 
 import (
 	"errors"
+	"fmt"
 	"reflect"
+	"regexp"
 	"testing"
 	"weight-tracker/pkg/api"
 )
@@ -40,6 +42,13 @@ func (m mockUserRepo) CreateUser(request api.NewUserRequest) (userID int, err er
 	return userID, nil
 }
 
+func (m mockUserRepo) CreateUser_v2(email, hashedPassword string) (user api.User, err error) {
+	user.Email = email
+	user.HashedPassword = hashedPassword
+
+	return
+}
+
 func (m mockUserRepo) GetUser(userID int) (api.User, error) {
 	return m.users[userID], nil
 }
@@ -49,6 +58,7 @@ func (m mockUserRepo) GetUserByEmail(userEmail string) (api.User, error) {
 	// check email, and return email if theirs
 	for _, user := range m.users {
 		if user.Email == userEmail {
+			fmt.Printf("is user: %v \n\tgiven: %v\n\tcurrent: %v\n", userEmail == user.Email, userEmail, user.Email)
 			return user, nil
 		}
 	}
@@ -104,83 +114,172 @@ func (m mockUserRepo) DeleteUser(userID int) (deletedUserID int, err error) {
 	return userID, nil
 }
 
-func TestCreateNewUser(t *testing.T) {
+func TestCreateUser(t *testing.T) {
+	// the CreateUser method handles the actual call to the database to save the user
+	// on a successful creation it will not return an error otherwise, it will.
 
+	// otherwise it returns an empty interface and an error
+
+	// we do not expect any errors from the service itself, but it can return one assuming
+	// the storage interface it uses encounters one.
+	// for the tests however, it is
+
+	// test 1
 	tests := []struct {
-		name     string
-		request  api.NewUserRequest
-		want_err error
-		want_id  int
+		name           string
+		email          string
+		hashedPassword string
+		want_user      api.User
+		want_error     error
 	}{
 		{
-			name: "should create a new user successfully",
-			request: api.NewUserRequest{
-				Name:          "test user",
-				WeightGoal:    "maintain",
-				Age:           20,
-				Height:        180,
-				Sex:           "female",
-				ActivityLevel: 5,
-				Email:         "test_user@gmail.com",
-			},
-			want_err: nil,
-			want_id:  0,
-		}, {
-			name: "should return an error because of missing email",
-			request: api.NewUserRequest{
-				Name:          "test user",
-				Age:           20,
-				WeightGoal:    "maintain",
-				Height:        180,
-				Sex:           "female",
-				ActivityLevel: 5,
-				Email:         "",
-			},
-			want_err: errors.New("user service - email required"),
-			want_id:  0,
-		}, {
-			name: "should return an error because of missing name",
-			request: api.NewUserRequest{
-				Name:          "",
-				Age:           20,
-				WeightGoal:    "maintain",
-				Height:        180,
-				Sex:           "female",
-				ActivityLevel: 5,
-				Email:         "test_user@gmail.com",
-			},
-			want_err: errors.New("user service - name required"),
-			want_id:  0,
-		}, {
-			name: "should return error because user with email already exists",
-			request: api.NewUserRequest{
-				Name:          "test user with email exists",
-				Age:           20,
-				Height:        180,
-				WeightGoal:    "maintain",
-				Sex:           "female",
-				ActivityLevel: 5,
-				Email:         "taken_email@email.com",
-			},
-			want_err: errors.New("user service - user with email already exists"),
-			want_id:  0,
+			name:           "It creates and returns the user created",
+			email:          "newEmail@email.com",
+			hashedPassword: "xHaaPass",
+			want_user:      api.User{Email: "newEmail@email.com", HashedPassword: "xHaaPass"},
+			want_error:     nil,
 		},
 	}
 
+	mockRepo := mockUserRepo{}
+	userService := api.NewUserService(&mockRepo)
 	for _, test := range tests {
-		test_users := copyUserMap(users)
-		mockRepo := mockUserRepo{users: test_users}
-		mockUserService := api.NewUserService(&mockRepo)
-
 		t.Run(test.name, func(t *testing.T) {
-			userID, err := mockUserService.New(test.request)
+			user, err := userService.CreateUser(test.email, test.hashedPassword)
 
-			if !reflect.DeepEqual(err, test.want_err) {
-				t.Errorf("test: %v failed. got: %v, wanted: %v", test.name, err, test.want_err)
+			if err != test.want_error {
+				t.Errorf("test: %v failed.\n\tgot: %v\n\twanted: %v", test.name, err, test.want_error)
 			}
 
-			if userID != test.want_id {
-				t.Errorf("test: %v failed. got: %v, wanted: %v", test.name, err, test.want_err)
+			if user != test.want_user {
+				t.Errorf("test %v failed.\n\t got: %+v\n\twanted: %+v", test.name, user, test.want_user)
+			}
+		})
+	}
+}
+
+func TestHashPassword(t *testing.T) {
+	// checks if the password is indeed hashed as intended.
+	// not necessarily check if the hashed is the same as an intended hash.
+	// just check if the return value follows some sort of pattern.
+
+	tests := []struct {
+		name            string
+		password        string
+		want_error      error
+		want_hashLenght int
+
+		// hashed passwords look like this $2a$10$DqbfQm0RQEGjvrPWv.IN.eNvk5VJ6g0A.DnN1g50jZS6L319l8GAC
+		want_has_letters_numbers_and_symbols bool
+	}{
+		{
+			name:                                 "It creates a hashed Password",
+			password:                             "myPasswordRabbits",
+			want_hashLenght:                      60,
+			want_has_letters_numbers_and_symbols: true,
+			want_error:                           nil,
+		},
+	}
+
+	userRepo := mockUserRepo{}
+	userService := api.NewUserService(&userRepo)
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			// pattern represents letters numbers and symbols.
+			// see this link for better explanation of the regex
+			// hashing was successfull if there is a-zA-Z0-9_ or \/$.
+			pattern, err := regexp.Compile(`\w[\/\\.\$]?`)
+
+			if err != nil {
+				t.Errorf("test %v failed.\n\tError: %v\n\tat regex compilation", test.name, err)
+			}
+
+			hashedPass, err := userService.HashPassword(test.password)
+			hashLenght := len(hashedPass)
+			has_letters_numbers_and_symbols := pattern.MatchString(hashedPass)
+
+			if err != test.want_error {
+				t.Errorf("test: %v failed.\n\tgot: %v\n\twanted: %v", test.name, err, test.want_error)
+			}
+
+			if hashLenght != test.want_hashLenght {
+				t.Errorf("test: %v failed.\n\tgot: %v\n\twanted: %v", test.name, hashLenght, test.want_has_letters_numbers_and_symbols)
+			}
+
+			if has_letters_numbers_and_symbols != test.want_has_letters_numbers_and_symbols {
+				t.Errorf("test: %v failed.\n\tgot: %v\n\twanted: %v", test.name, has_letters_numbers_and_symbols, test.want_has_letters_numbers_and_symbols)
+			}
+
+		})
+	}
+}
+
+func TestUserExists(t *testing.T) {
+	// checks if the function indeed returns a boolean
+	// that validates the User's existence in storage
+	tests := []struct {
+		name           string
+		userEmail      string
+		want_existence bool
+		want_error     error
+	}{
+		{
+			name:           "should return true when user exists",
+			userEmail:      "taken_email@email.com",
+			want_existence: true,
+			want_error:     nil,
+		},
+		{
+			name:           "should return false when user does not exist",
+			userEmail:      "non_existent_user@email.com",
+			want_existence: false,
+			want_error:     nil,
+		},
+	}
+
+	userRepo := mockUserRepo{users: users}
+	userService := api.NewUserService(&userRepo)
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			existence, err := userService.UserExists(test.userEmail)
+			if err != test.want_error {
+				t.Errorf("test: %v failed.\n\tgot: %v\n\twanted: %v", test.name, err, test.want_error)
+			}
+
+			if existence != test.want_existence {
+				t.Errorf("test: %v failed.\n\tgot: %v\n\twanted: %v", test.name, existence, test.want_existence)
+			}
+		})
+	}
+}
+
+func TestValidatePassword(t *testing.T) {
+	// check if the given password does not pass website bare minimums
+	tests := []struct {
+		name       string
+		password   string
+		want_valid bool
+		want_error error
+	}{
+		{
+			name:       "Should return false for a password less than 6 characters in len",
+			password:   "lofi1",
+			want_valid: false,
+		},
+		{
+			name:       "Should return true for a password more than 6 characters",
+			password:   "asdf234",
+			want_valid: true,
+		},
+	}
+
+	userService := api.NewUserService(nil)
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			valid := userService.ValidatePassword(test.password)
+
+			if valid != test.want_valid {
+				t.Errorf("test: %v failed.\n\tgot: %v\n\twanted: %v", test.name, valid, test.want_valid)
 			}
 		})
 	}

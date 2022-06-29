@@ -1,0 +1,4 @@
+BEGIN;
+  ALTER TABLE user 
+  ADD COLUMN hashedPassword CHAR(60);
+COMMIT;

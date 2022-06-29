@@ -24,17 +24,18 @@ type UpdateUserRequest struct {
 }
 
 type User struct {
-	ID            int       `json:"id"`
-	Password      string    `json:"password"`
-	CreatedAt     time.Time `json:"created_at"`
-	UpdatedAt     time.Time `json:"updated_at"`
-	Name          string    `json:"name"`
-	Age           int       `json:"age"`
-	Height        int       `json:"height"`
-	Sex           string    `json:"sex"`
-	ActivityLevel int       `json:"activity_level"`
-	WeightGoal    string    `json:"weight_goal"`
-	Email         string    `json:"email"`
+	ID             int       `json:"id"`
+	Password       string    `json:"password"`
+	HashedPassword string    `json:hashedPassword`
+	CreatedAt      time.Time `json:"created_at"`
+	UpdatedAt      time.Time `json:"updated_at"`
+	Name           string    `json:"name"`
+	Age            int       `json:"age"`
+	Height         int       `json:"height"`
+	Sex            string    `json:"sex"`
+	ActivityLevel  int       `json:"activity_level"`
+	WeightGoal     string    `json:"weight_goal"`
+	Email          string    `json:"email"`
 }
 
 type Weight struct {
