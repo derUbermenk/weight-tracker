@@ -1,0 +1,8 @@
+- name: New Human
+  email: newHuman@email.com
+  hashed_password: hashedPass
+
+- name: Second Human 
+  email: newHuman2@email.com
+  hashed_password: hashedPass
+  
