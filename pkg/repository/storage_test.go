@@ -16,11 +16,6 @@ import (
 	"github.com/golang-migrate/migrate/v4"
 )
 
-var (
-	db                *sql.DB
-	connection_string string
-)
-
 const (
 	username     = "chester"
 	password     = "baba_yetu"
@@ -28,42 +23,73 @@ const (
 	databaseName = "weight_tracker_test"
 )
 
-// formats the connection string
-func formatConnectionString() {
-	connection_string = fmt.Sprintf(
+var databaseManager *DatabaseManager
+
+type DatabaseManager struct {
+	db                *sql.DB
+	fixtureLoader     *testfixtures.Loader
+	connection_string string
+}
+
+func NewDatabaseManager(username, password, host, databaseName string) *DatabaseManager {
+	connectionString := fmt.Sprintf(
 		"postgres://%s:%s@%s/%s?sslmode=disable",
 		username, password, host, databaseName,
 	)
+
+	return &DatabaseManager{
+		connection_string: connectionString,
+	}
 }
 
-func connect_to_database(connection_string string) error {
+func (dm *DatabaseManager) main_connectDB() error {
 	var err error
-	db, err = sql.Open("postgres", connection_string)
+	dm.db, err = sql.Open("postgres", dm.connection_string)
 
 	if err != nil {
 		return err
 	}
 
-	if err = db.Ping(); err != nil {
+	err = dm.db.Ping()
+
+	if err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func set_up_database(connection_string string) error {
-	if connection_string == "" {
-		err := errors.New("repository: the connString was empty")
+func (dm *DatabaseManager) main_initializeFixtureLoader() error {
+	var err error
+
+	if dm.db == nil {
+		err = errors.New("No database connected")
 		return err
 	}
 
+	dm.fixtureLoader, err = testfixtures.New(
+		testfixtures.Database(dm.db),       // You database connection
+		testfixtures.Dialect("postgres"),   // Available: "postgresql", "timescaledb", "mysql", "mariadb", "sqlite" and "sqlserver"
+		testfixtures.Directory("fixtures"), // The directory containing the YAML files
+	)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (dm *DatabaseManager) test_setupDB() error {
+	if dm.connection_string == "" {
+		return errors.New("repository: the connString was empty")
+	}
 	// get base path
 	_, b, _, _ := runtime.Caller(0)
 	basePath := filepath.Join(filepath.Dir(b), "../..")
 
 	migrationsPath := filepath.Join("file://", basePath, "/pkg/repository/migrations/")
 
-	m, err := migrate.New(migrationsPath, connection_string)
+	m, err := migrate.New(migrationsPath, dm.connection_string)
 
 	if err != nil {
 		return err
@@ -72,8 +98,8 @@ func set_up_database(connection_string string) error {
 	err = m.Up()
 
 	switch err {
-	case errors.New("no change"):
-		//
+	case migrate.ErrNoChange:
+		return nil
 	default:
 		return err
 	}
@@ -81,54 +107,36 @@ func set_up_database(connection_string string) error {
 	return nil
 }
 
-func populate_database(db *sql.DB) error {
-	// use fixtures here
-
-	fixtures, err := testfixtures.New(
-		testfixtures.Database(db),
-		testfixtures.Dialect("postgres"),
-		testfixtures.Directory("testdata/fixtures"),
-	)
-
-	if err != nil {
-		return err
+func (dm *DatabaseManager) test_teardownDB() error {
+	if dm.connection_string == "" {
+		return errors.New("repository: the connString was empty")
 	}
-
-	if err = fixtures.Load(); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func teardown_database(connection_string string) error {
-	// run down migrations instaed
-	if connection_string == "" {
-		err := errors.New("repository: the connString was empty")
-		log.Printf("Error on teardown: %v", err)
-		return err
-	}
-
 	// get base path
 	_, b, _, _ := runtime.Caller(0)
 	basePath := filepath.Join(filepath.Dir(b), "../..")
 
 	migrationsPath := filepath.Join("file://", basePath, "/pkg/repository/migrations/")
 
-	m, err := migrate.New(migrationsPath, connection_string)
+	m, err := migrate.New(migrationsPath, dm.connection_string)
 
 	if err != nil {
-		log.Printf("Error on teardown: %v", err)
 		return err
 	}
 
 	err = m.Drop()
 
 	switch err {
-	case errors.New("no change"):
-		//
+	case migrate.ErrNoChange:
+		return nil
 	default:
-		log.Printf("Error on teardown: %v", err)
+		return err
+	}
+
+	return nil
+}
+
+func (dm *DatabaseManager) test_populateDB() error {
+	if err := dm.fixtureLoader.Load(); err != nil {
 		return err
 	}
 
@@ -137,23 +145,24 @@ func teardown_database(connection_string string) error {
 
 func TestMain(m *testing.M) {
 	var err error
-	formatConnectionString()
-	if err = connect_to_database(connection_string); err != nil {
-		return
+	databaseManager = NewDatabaseManager(username, password, host, databaseName)
+	if err = databaseManager.main_connectDB(); err != nil {
+		log.Printf("Error at main connect: %v", err)
+		os.Exit(1)
 	}
-	if err = set_up_database(connection_string); err != nil {
-		return
-	}
-	if err = populate_database(db); err != nil {
-		return
-	}
-	defer teardown_database(connection_string)
 
-	exitVal := m.Run() // run all test functions
-	defer os.Exit(exitVal)
+	if err = databaseManager.test_setupDB(); err != nil {
+		log.Printf("Error at main setup: %v", err)
+		os.Exit(1)
+	}
 
-	// the above comments mean that I still need to reset the database after every test
-	// but not necessarily set them up again.
+	if err = databaseManager.main_initializeFixtureLoader(); err != nil {
+		log.Printf("Error at main fixture loader: %v", err)
+		os.Exit(1)
+	}
+
+	exitValue := m.Run()
+	os.Exit(exitValue)
 }
 
 func TestCreateUser(t *testing.T) {
@@ -169,24 +178,28 @@ func TestCreateUser(t *testing.T) {
 		{
 			name:        "Must return the user ID of the new user when successfully created",
 			userRequest: api.NewUserRequest{},
-			want_uID:    3,
+			want_uID:    10001,
 			want_error:  nil,
 		},
 	}
 
 	// run tests
-	userRepo := repository.NewStorage(db)
+	userRepo := repository.NewStorage(databaseManager.db)
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			// make transaction
-			tx, err := db.Begin()
-			if err != nil {
-				t.Errorf("Error in initializing transaction: %v", err)
+			var err error
+
+			if err = databaseManager.test_teardownDB(); err != nil {
+				t.Errorf("Error at test setup: %v", err)
 			}
-			// will be called after this function ends.
-			// 	No return statement means function returns at end
-			defer fmt.Println("called rollback") // delete this later
-			defer tx.Rollback()
+
+			if err = databaseManager.test_setupDB(); err != nil {
+				t.Errorf("Error at test setup: %v", err)
+			}
+
+			if err = databaseManager.test_populateDB(); err != nil {
+				t.Errorf("Error at test setup: %v", err)
+			}
 
 			uID, err := userRepo.CreateUser(test.userRequest)
 
