@@ -151,11 +151,6 @@ func TestMain(m *testing.M) {
 		os.Exit(1)
 	}
 
-	if err = databaseManager.test_setupDB(); err != nil {
-		log.Printf("Error at main setup: %v", err)
-		os.Exit(1)
-	}
-
 	if err = databaseManager.main_initializeFixtureLoader(); err != nil {
 		log.Printf("Error at main fixture loader: %v", err)
 		os.Exit(1)
@@ -177,7 +172,7 @@ func TestCreateUser(t *testing.T) {
 	}{
 		{
 			name:        "Must return the user ID of the new user when successfully created",
-			userRequest: api.NewUserRequest{},
+			userRequest: api.NewUserRequest{Name: "rabbit", Email: "rabbit@email.com", HashedPassword: "hashedPass"},
 			want_uID:    10001,
 			want_error:  nil,
 		},
@@ -210,6 +205,14 @@ func TestCreateUser(t *testing.T) {
 			if uID != test.want_uID {
 				t.Errorf("test: %v failed.\n\tgot: %v\n\twanted: %v", test.name, uID, test.want_uID)
 			}
+
+			if err = databaseManager.test_teardownDB(); err != nil {
+				t.Errorf("Error at test setup: %v", err)
+			}
 		})
 	}
+}
+
+func TestDeleteUser(t *testing.T) {
+
 }
