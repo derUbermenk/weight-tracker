@@ -143,6 +143,29 @@ func (dm *DatabaseManager) test_populateDB() error {
 	return nil
 }
 
+func (dm *DatabaseManager) testSetUpGroup(t *testing.T) {
+	var err error
+
+	if err = databaseManager.test_teardownDB(); err != nil {
+		t.Errorf("Error at test setup: %v", err)
+	}
+
+	if err = databaseManager.test_setupDB(); err != nil {
+		t.Errorf("Error at test setup: %v", err)
+	}
+
+	if err = databaseManager.test_populateDB(); err != nil {
+		t.Errorf("Error at test setup: %v", err)
+	}
+}
+
+func (dm *DatabaseManager) testTearDownGroup(t *testing.T) {
+	var err error
+	if err = databaseManager.test_teardownDB(); err != nil {
+		t.Errorf("Error at test setup: %v", err)
+	}
+}
+
 func TestMain(m *testing.M) {
 	var err error
 	databaseManager = NewDatabaseManager(username, password, host, databaseName)
@@ -214,5 +237,70 @@ func TestCreateUser(t *testing.T) {
 }
 
 func TestDeleteUser(t *testing.T) {
+	tests := []struct {
+		name                      string
+		delete_id                 int
+		want_deleted_id           int
+		want_error                error
+		want_remaining_user_count int
+	}{
+		{
+			name:       "Must not return an error",
+			delete_id:  1,
+			want_error: nil,
+		},
+		{
+			name:            "Must return the correct id of the users",
+			delete_id:       1,
+			want_deleted_id: 1,
+		},
+		{
+			name:                      "Must leave the correct amount of remaining users",
+			delete_id:                 1,
+			want_remaining_user_count: 1,
+		},
+	}
 
+	userRepo := repository.NewStorage(databaseManager.db)
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			databaseManager.testSetUpGroup(t)
+
+			switch test.name {
+
+			case tests[0].name:
+				_, err := userRepo.DeleteUser(test.delete_id)
+
+				if err != test.want_error {
+					t.Errorf("test: %v failed. \n\tgot: %v\n\twanted: %v", test.name, err, test.want_error)
+				}
+
+			case tests[1].name:
+				deleted_id, _ := userRepo.DeleteUser(test.delete_id)
+
+				if deleted_id != test.delete_id {
+					t.Errorf("test: %v failed. \n\tgot: %v\n\twanted: %v", test.name, deleted_id, test.want_deleted_id)
+				}
+
+			case tests[2].name:
+				userRepo.DeleteUser(test.delete_id)
+
+				var remaining_user_count int
+				count_user_statement := `
+					SELECT COUNT(*) FROM "user";
+				`
+				err := databaseManager.db.QueryRow(count_user_statement).Scan(&remaining_user_count)
+
+				if err != nil {
+					t.Errorf("test: %v failed. \n\tGot error: %v", test.name, err)
+				}
+
+				if remaining_user_count != test.want_remaining_user_count {
+					t.Errorf("test: %v failed. \n\tgot: %v\n\twanted: %v", test.name, remaining_user_count, test.want_remaining_user_count)
+				}
+			}
+
+			databaseManager.testTearDownGroup(t)
+		})
+	}
 }
