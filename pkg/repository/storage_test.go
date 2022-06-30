@@ -128,11 +128,11 @@ func (dm *DatabaseManager) test_teardownDB() error {
 	switch err {
 	case migrate.ErrNoChange:
 		return nil
+	case nil:
+		return nil
 	default:
 		return err
 	}
-
-	return nil
 }
 
 func (dm *DatabaseManager) test_populateDB() error {
@@ -166,20 +166,50 @@ func (dm *DatabaseManager) testTearDownGroup(t *testing.T) {
 	}
 }
 
-func TestMain(m *testing.M) {
+func (dm *DatabaseManager) mainSetUpGroup() {
+	// the success of the following tests and their reliance on fixtures
+	// relies on the ordering to this main setup group.
+	//
+	// main_connectDB connects to the database and initilizes the db field of the database manager
+	// test_setupDB relies on the db initialized by the prior function to setup the tables
+	// fixtureloader initilizes a fixture loader it does not populate the db yet.
+	//
+	// apparently the fixture loader relies on the fact that the db has already tables in store
+	// to ensure proper functionality. earlier I did not run test_setupDB prior and had failing tests
+	// due to the fixture loader not knowing proper ordering
+
 	var err error
-	databaseManager = NewDatabaseManager(username, password, host, databaseName)
-	if err = databaseManager.main_connectDB(); err != nil {
-		log.Printf("Error at main connect: %v", err)
+	if err = dm.main_connectDB(); err != nil {
+		log.Printf("Error at main setup:\n\tConnecting to db error: %v", err)
 		os.Exit(1)
 	}
 
-	if err = databaseManager.main_initializeFixtureLoader(); err != nil {
-		log.Printf("Error at main fixture loader: %v", err)
+	if err = dm.test_setupDB(); err != nil {
+		log.Printf("Error at main setup:\n\tSetting up db error: %v", err)
 		os.Exit(1)
 	}
+
+	if err = dm.main_initializeFixtureLoader(); err != nil {
+		log.Printf("Error at main setup:\n\tInitializing fixture loader error: %v", err)
+		os.Exit(1)
+	}
+}
+
+func (dm *DatabaseManager) mainTearDownGroup() {
+	var err error
+	if err = dm.test_teardownDB(); err != nil {
+		log.Printf("Error at main teardown:\n\ttear down error: %v", err)
+		os.Exit(1)
+	}
+}
+
+func TestMain(m *testing.M) {
+	databaseManager = NewDatabaseManager(username, password, host, databaseName)
+	databaseManager.mainSetUpGroup()
 
 	exitValue := m.Run()
+
+	databaseManager.mainTearDownGroup()
 	os.Exit(exitValue)
 }
 
@@ -205,19 +235,7 @@ func TestCreateUser(t *testing.T) {
 	userRepo := repository.NewStorage(databaseManager.db)
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			var err error
-
-			if err = databaseManager.test_teardownDB(); err != nil {
-				t.Errorf("Error at test setup: %v", err)
-			}
-
-			if err = databaseManager.test_setupDB(); err != nil {
-				t.Errorf("Error at test setup: %v", err)
-			}
-
-			if err = databaseManager.test_populateDB(); err != nil {
-				t.Errorf("Error at test setup: %v", err)
-			}
+			databaseManager.testSetUpGroup(t)
 
 			uID, err := userRepo.CreateUser(test.userRequest)
 
@@ -229,9 +247,7 @@ func TestCreateUser(t *testing.T) {
 				t.Errorf("test: %v failed.\n\tgot: %v\n\twanted: %v", test.name, uID, test.want_uID)
 			}
 
-			if err = databaseManager.test_teardownDB(); err != nil {
-				t.Errorf("Error at test setup: %v", err)
-			}
+			databaseManager.testTearDownGroup(t)
 		})
 	}
 }
