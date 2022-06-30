@@ -1,2 +1,2 @@
 ALTER TABLE "user"
-DROP COLUMN hashed_password;
+DROP COLUMN IF EXISTS hashed_password;

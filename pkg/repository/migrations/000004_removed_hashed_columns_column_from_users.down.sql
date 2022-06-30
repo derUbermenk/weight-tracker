@@ -1,2 +1,2 @@
 ALTER TABLE "user"
-ADD COLUMN hashed_column CHAR(60);
+ADD COLUMN IF NOT EXISTS hashed_column CHAR(60);
