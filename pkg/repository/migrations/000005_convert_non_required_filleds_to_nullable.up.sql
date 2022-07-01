@@ -1,0 +1,19 @@
+ALTER TABLE "user"
+  ALTER COLUMN age
+  DROP NOT NULL;
+
+ALTER TABLE "user"
+  ALTER COLUMN height 
+  DROP NOT NULL;
+
+ALTER TABLE "user"
+  ALTER COLUMN sex 
+  DROP NOT NULL;
+
+ALTER TABLE "user"
+  ALTER COLUMN activity_level 
+  DROP NOT NULL;
+
+ALTER TABLE "user"
+  ALTER COLUMN weight_goal 
+  DROP NOT NULL;

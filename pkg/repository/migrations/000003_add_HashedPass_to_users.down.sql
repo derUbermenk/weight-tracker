@@ -1,4 +1,2 @@
-BEGIN;
-  ALTER TABLE user 
-  DROP COLUMN hashedPassword; 
-COMMIT;
+ALTER TABLE "user"
+DROP COLUMN IF EXISTS hashed_password;

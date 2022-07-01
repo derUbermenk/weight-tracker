@@ -67,11 +67,11 @@ func (s *storage) RunMigrations(connectionString string) error {
 
 func (s *storage) CreateUser(request api.NewUserRequest) (userID int, err error) {
 	newUserStatement := `
-		INSERT INTO "user" (name, age, height, sex, activity_level, email, weight_goal)
-		VALUES ($1, $2, $3, $4, $5, $6, $7)
+		INSERT INTO "user" (name, age, hashed_password, height, sex, activity_level, email, weight_goal)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 		RETURNING id;
 		`
-	err = s.db.QueryRow(newUserStatement, request.Name, request.Age, request.Height, request.Sex, request.ActivityLevel, request.Email, request.WeightGoal).Scan(&userID)
+	err = s.db.QueryRow(newUserStatement, request.Name, request.Age, request.HashedPassword, request.Height, request.Sex, request.ActivityLevel, request.Email, request.WeightGoal).Scan(&userID)
 
 	if err != nil {
 		log.Printf("this was the error: %v", err.Error())
